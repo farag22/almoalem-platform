@@ -36,11 +36,11 @@ export default function StudentsPage() {
     if (!teacherId) return
     setLoading(true)
     try {
-      // جلب الطلاب والمجموعات والمدفوعات الخاصة بالمعلم مباشرة وبشكل موثوق
+      // جلب الطلاب والمجموعات بشكل منفصل ومستقل لمنع أي مشاكل في الـ Relations
       const [sRes, gRes] = await Promise.all([
         supabase
           .from('students')
-          .select('*, groups(group_name, color_code)')
+          .select('*')
           .eq('teacher_id', teacherId)
           .order('created_at', { ascending: false }),
         supabase
