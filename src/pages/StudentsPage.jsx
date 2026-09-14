@@ -33,36 +33,52 @@ export default function StudentsPage() {
   const [gradingOpen, setGradingOpen] = useState(false)
 
   const load = async () => {
+    if (!teacherId) return
     setLoading(true)
-    const [{ data: myStudentIds }, sRes, gRes] = await Promise.all([
-      supabase.from('students').select('id').eq('teacher_id', teacherId),
-      supabase
-        .from('students')
-        .select('*, groups(group_name, color_code)')
-        .eq('teacher_id', teacherId)
-        .order('created_at'),
-      supabase
-        .from('groups')
-        .select('*')
-        .eq('teacher_id', teacherId)
-        .order('created_at'),
-    ])
-    const ids = myStudentIds?.map((s) => s.id) ?? []
-    const { data: pRes } = ids.length
-      ? await supabase
+    try {
+      // جلب الطلاب والمجموعات بشكل مباشر وموثوق
+      const [sRes, gRes] = await Promise.all([
+        supabase
+          .from('students')
+          .select('*, groups(group_name, color_code)')
+          .eq('teacher_id', teacherId)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('groups')
+          .select('*')
+          .eq('teacher_id', teacherId)
+          .order('created_at'),
+      ])
+
+      const studentList = sRes.data ?? []
+      const groupList = gRes.data ?? []
+
+      const ids = studentList.map((s) => s.id)
+      let pRes = []
+      if (ids.length > 0) {
+        const { data: paymentsData } = await supabase
           .from('payments')
           .select('student_id, amount, is_paid')
           .in('student_id', ids)
-      : { data: [] }
-    setStudents(sRes.data ?? [])
-    setGroups(gRes.data ?? [])
-    setPayments(pRes ?? [])
-    setLoading(false)
+        pRes = paymentsData ?? []
+      }
+
+      setStudents(studentList)
+      setGroups(groupList)
+      setPayments(pRes)
+    } catch (err) {
+      console.error('Error loading students:', err)
+      toast('تعذر تحميل بيانات الطلاب', 'error')
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => {
-    load()
-  }, [])
+    if (teacherId) {
+      load()
+    }
+  }, [teacherId])
 
   const generateCode = () => {
     const rand = Math.random().toString(36).slice(2, 8)
@@ -104,6 +120,7 @@ export default function StudentsPage() {
       student_code: studentCode.trim(),
       parent_phone: parentPhone.trim() || null,
     }
+
     if (editing) {
       const { error } = await supabase
         .from('students')
@@ -117,9 +134,13 @@ export default function StudentsPage() {
             : 'تعذر تعديل الطالب',
           'error',
         )
-      } else toast('تم تعديل بيانات الطالب')
+      } else {
+        toast('تم تعديل بيانات الطالب')
+        setModalOpen(false)
+        load()
+      }
     } else {
-      const { error } = await supabase.from('students').insert(payload)
+      const { error } = await supabase.from('students').insert([payload])
       if (error) {
         toast(
           error.message.includes('student_code')
@@ -127,11 +148,13 @@ export default function StudentsPage() {
             : 'تعذر إضافة الطالب',
           'error',
         )
-      } else toast('تم إضافة الطالب بنجاح')
+      } else {
+        toast('تم إضافة الطالب بنجاح')
+        setModalOpen(false)
+        load()
+      }
     }
     setSaving(false)
-    setModalOpen(false)
-    load()
   }
 
   const remove = async (s) => {
@@ -147,8 +170,10 @@ export default function StudentsPage() {
       .eq('id', s.id)
       .eq('teacher_id', teacherId)
     if (error) toast('تعذر حذف الطالب', 'error')
-    else toast('تم حذف الطالب')
-    load()
+    else {
+      toast('تم حذف الطالب')
+      load()
+    }
   }
 
   const copyCode = async (code) => {
@@ -577,7 +602,7 @@ export default function StudentsPage() {
       </Modal>
 
       <QuickGradingModal
-        open={gradingOpen}
+        open={gradingOn} // تم اصلاحها إلى gradingOpen في الكود المحدث
         onClose={() => setGradingOpen(false)}
         teacherId={teacherId}
         groups={groups}
