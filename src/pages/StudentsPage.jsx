@@ -207,11 +207,16 @@ export default function StudentsPage() {
   const groupById = (id) => groups.find((g) => g.id === id)
 
   const paymentStatsFor = (studentId) => {
-    const ps = payments.filter((p) => p.student_id === studentId || p.student === studentId)
-    if (ps.length === 0) return { total: 0, paid: 0, remaining: 0 }
+    const studentObj = students.find((s) => s.id === studentId)
+    const grp = groupById(studentObj?.group_id)
     
-    const total = ps.reduce((x, p) => x + Number(p.amount || p.total || p.cost || 0), 0)
-    const paid = ps.reduce((x, p) => x + (p.is_paid || p.paid || p.status === 'paid' ? Number(p.amount || p.total || p.cost || 0) : 0), 0)
+    // حساب المبلغ المستحق من سعر المجموعة الأساسي
+    const total = grp 
+      ? (grp.subscription_type === 'monthly' ? Number(grp.monthly_price || 0) : Number(grp.session_price || 0))
+      : 0
+
+    const ps = payments.filter((p) => p.student_id === studentId || p.student === studentId)
+    const paid = ps.reduce((x, p) => x + (p.notes === 'تم الدفع' ? Number(p.amount || 0) : 0), 0)
     const remaining = Math.max(0, total - paid)
     return { total, paid, remaining }
   }
@@ -336,11 +341,13 @@ export default function StudentsPage() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-sm font-extrabold text-slate-800">{s.student_name}</p>
                         {total === 0 ? (
-                          <span className="text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full font-bold">بدون مطالبات</span>
+                          <span className="text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full font-bold">بدون سعر</span>
                         ) : remaining === 0 ? (
-                          <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-bold">مدفوع ({fmtMoney(paid)})</span>
+                          <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-bold">مدفوع ({fmtMoney(paid)}/{fmtMoney(total)})</span>
+                        ) : paid > 0 ? (
+                          <span className="text-[10px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full font-bold">دفع جزئي ({fmtMoney(paid)}/{fmtMoney(total)}) — متبقي: {fmtMoney(remaining)}</span>
                         ) : (
-                          <span className="text-[10px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full font-bold">متبقي: {fmtMoney(remaining)}</span>
+                          <span className="text-[10px] text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full font-bold">متبقي: {fmtMoney(remaining)} / {fmtMoney(total)}</span>
                         )}
                       </div>
                       <div className="mt-1 flex items-center gap-1.5 flex-wrap">
@@ -448,7 +455,7 @@ export default function StudentsPage() {
                   <th className="th">الطالب</th>
                   <th className="th">المجموعة</th>
                   <th className="th">حضور آخر حصة</th>
-                  <th className="th">حالة المصروفات</th>
+                  <th className="th">حالة المصروفات (المدفوع / المستحق)</th>
                   <th className="th">كود ولي الأمر</th>
                   <th className="th">رقم الموبايل</th>
                   <th className="th">إجراءات</th>
@@ -497,14 +504,18 @@ export default function StudentsPage() {
                       </td>
                       <td className="td">
                         {total === 0 ? (
-                          <span className="text-xs text-slate-400">لا توجد مطالبات</span>
+                          <span className="text-xs text-slate-400">بدون سعر محدد</span>
                         ) : remaining === 0 ? (
                           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
-                            مدفوع ({fmtMoney(paid)})
+                            مدفوع بالكامل ({fmtMoney(paid)} / {fmtMoney(total)})
+                          </span>
+                        ) : paid > 0 ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700">
+                            دفع جزئي: {fmtMoney(paid)} / {fmtMoney(total)} (متبقي: {fmtMoney(remaining)})
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700">
-                            متبقي: {fmtMoney(remaining)}
+                          <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-700">
+                            متبقي: {fmtMoney(remaining)} / {fmtMoney(total)}
                           </span>
                         )}
                       </td>
