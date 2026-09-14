@@ -37,46 +37,64 @@ export default function AttendancePage() {
   const [printOpen, setPrintOpen] = useState(false)
 
   const load = useCallback(async () => {
+    if (!teacherId) return
     setLoading(true)
-    const [{ data: myStudentIds }, gRes, sRes] = await Promise.all([
-      supabase.from('students').select('id').eq('teacher_id', teacherId),
-      supabase
-        .from('groups')
-        .select('*')
-        .eq('teacher_id', teacherId)
-        .order('created_at'),
-      supabase
-        .from('students')
-        .select('*, groups(group_name, color_code)')
-        .eq('teacher_id', teacherId)
-        .order('created_at'),
-    ])
-    const ids = myStudentIds?.map((s) => s.id) ?? []
-    const { data: aRes } = ids.length
-      ? await supabase
+    try {
+      const [sRes, gRes] = await Promise.all([
+        supabase
+          .from('students')
+          .select('*')
+          .eq('teacher_id', teacherId)
+          .order('created_at'),
+        supabase
+          .from('groups')
+          .select('*')
+          .eq('teacher_id', teacherId)
+          .order('created_at'),
+      ])
+
+      const studentList = sRes.data ?? []
+      const groupList = gRes.data ?? []
+
+      let aRes = []
+      if (studentList.length > 0) {
+        const studentIds = studentList.map((s) => s.id)
+        const { data: attendanceData } = await supabase
           .from('attendance')
           .select('*')
           .eq('session_date', date)
-          .in('student_id', ids)
-      : { data: [] }
-    setGroups(gRes.data ?? [])
-    setStudents(sRes.data ?? [])
-    const map = {}
-    aRes?.forEach((r) => {
-      map[r.student_id] = r.status
-    })
-    setRecords(map)
-    setLoading(false)
+          .in('student_id', studentIds)
+        aRes = attendanceData ?? []
+      }
+
+      setGroups(groupList)
+      setStudents(studentList)
+
+      const map = {}
+      aRes?.forEach((r) => {
+        map[r.student_id] = r.status
+      })
+      setRecords(map)
+    } catch (err) {
+      console.error('Error loading attendance:', err)
+      toast('تعذر تحميل بيانات الحضور', 'error')
+    } finally {
+      setLoading(false)
+    }
   }, [date, teacherId])
 
   useEffect(() => {
-    load()
-  }, [load])
+    if (teacherId) {
+      load()
+    }
+  }, [load, teacherId])
 
   const filteredStudents = useMemo(() => {
     if (groupFilter === 'all') return students
     return students.filter((s) => s.group_id === groupFilter)
   }, [students, groupFilter])
+
+  const groupById = (id) => groups.find((g) => g.id === id)
 
   const mark = async (student, status) => {
     const previous = records[student.id]
@@ -156,9 +174,10 @@ export default function AttendancePage() {
   const exportCSV = () => {
     const header = 'اسم الطالب,المجموعة,الحالة'
     const rows = filteredStudents.map((s) => {
+      const grp = groupById(s.group_id)
       const status = records[s.id] || 'لم يُسجَّل'
       const label = ATTENDANCE_STATUS[status]?.label || 'لم يُسجَّل'
-      return `"${s.student_name}","${s.groups?.group_name || ''}","${label}"`
+      return `"${s.student_name}","${grp?.group_name || ''}","${label}"`
     })
     const csv = '\uFEFF' + [header, ...rows].join('\n')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
@@ -172,13 +191,16 @@ export default function AttendancePage() {
 
   const statusLabel = (status) => ATTENDANCE_STATUS[status]?.label || 'لم يُسجَّل'
   const printColumns = ['م', 'اسم الطالب', 'المجموعة', 'الحالة', 'التوقيع']
-  const printRows = filteredStudents.map((s, i) => [
-    i + 1,
-    s.student_name,
-    s.groups?.group_name || 'بدون مجموعة',
-    statusLabel(records[s.id]),
-    '',
-  ])
+  const printRows = filteredStudents.map((s, i) => {
+    const grp = groupById(s.group_id)
+    return [
+      i + 1,
+      s.student_name,
+      grp?.group_name || 'بدون مجموعة',
+      statusLabel(records[s.id]),
+      '',
+    ]
+  })
   const groupLabel =
     groupFilter === 'all' ? 'كل المجاميع' : groups.find((g) => g.id === groupFilter)?.group_name || ''
 
@@ -269,7 +291,7 @@ export default function AttendancePage() {
       {filteredStudents.length === 0 ? (
         <div className="card flex flex-col items-center justify-center gap-3 py-16 text-center">
           <CalendarCheck className="h-12 w-12 text-slate-200" />
-          <p className="font-bold text-slate-500">لا يوجد طلاب في هذا التصفية</p>
+          <p className="font-bold text-slate-500">لا يوجد طلاب في هذه التصفية</p>
           <p className="text-sm text-slate-400">أضف طلاباً أو غيّر تصفية المجموعة</p>
         </div>
       ) : (
@@ -283,7 +305,7 @@ export default function AttendancePage() {
           </div>
           <div className="divide-y divide-slate-50">
             {filteredStudents.map((s) => {
-              const grp = s.groups
+              const grp = groupById(s.group_id)
               const current = records[s.id]
               const isAbsent = current === 'absent'
               const hasPhone = Boolean(s.parent_phone)
