@@ -70,6 +70,7 @@ export default function SessionsPage() {
     setSaving(true)
     const payload = {
       teacher_id: teacherId,
+      user_id: teacherId, // متوافق مع قيود الجدول في قاعدة البيانات
       group_id: groupId,
       day_of_week: dayOfWeek,
       session_time: time,
