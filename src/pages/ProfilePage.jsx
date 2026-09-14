@@ -1,19 +1,29 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { User, Camera, Save } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../components/ui/Toast'
 
 export default function ProfilePage() {
-  const { profile, teacherId } = useAuth()
+  const { profile, teacherId, refreshProfile } = useAuth()
   const toast = useToast()
   
-  const [fullName, setFullName] = useState(profile?.full_name || '')
-  const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || '')
+  const [fullName, setFullName] = useState('')
+  const [avatarUrl, setAvatarUrl] = useState('')
+  const [email, setEmail] = useState('')
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
 
-  // رفع الصورة الشخصية إلى Supabase Storage أو تخزين رابطها
+  // تحديث الحقول فور وصول بيانات الـ profile
+  useEffect(() => {
+    if (profile) {
+      setFullName(profile.full_name || '')
+      setAvatarUrl(profile.avatar_url || '')
+      setEmail(profile.email || '')
+    }
+  }, [profile])
+
+  // رفع الصورة الشخصية إلى Supabase Storage
   const handleImageUpload = async (e) => {
     try {
       setUploading(true)
@@ -21,21 +31,21 @@ export default function ProfilePage() {
       if (!file) return
 
       const fileExt = file.name.split('.').pop()
-      const fileName = `${teacherId}-${Math.random()}.${fileExt}`
+      const currentId = teacherId || profile?.id
+      const fileName = `${currentId}-${Date.now()}.${fileExt}`
       const filePath = `${fileName}`
 
-      // رفع الملف إلى Bucket باسم 'avatars' (يجب إنشاؤه مسبقاً في Supabase Storage)
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, file)
+        .upload(filePath, file, { upsert: true })
 
       if (uploadError) throw uploadError
 
-      // جلب الرابط العام للصورة
       const { data } = supabase.storage.from('avatars').getPublicUrl(filePath)
       setAvatarUrl(data.publicUrl)
       toast('تم رفع الصورة بنجاح')
     } catch (error) {
+      console.error(error)
       toast('حدث خطأ أثناء رفع الصورة، تأكد من إنشاء Bucket باسم avatars', 'error')
     } finally {
       setUploading(false)
@@ -44,29 +54,46 @@ export default function ProfilePage() {
 
   const handleSave = async (e) => {
     e.preventDefault()
-    setSaving(true)
-    const { error } = await supabase
-      .from('teachers')
-      .update({ full_name: fullName, avatar_url: avatarUrl })
-      .eq('id', teacherId)
+    const currentId = teacherId || profile?.id
 
-    if (error) {
-      toast('تعذر حفظ البيانات', 'error')
-    } else {
-      toast('تم تحديث الملف الشخصي بنجاح')
+    if (!currentId) {
+      toast('معرف المعلم غير موجود، يرجى إعادة تسجيل الدخول', 'error')
+      return
     }
-    setSaving(false)
+
+    setSaving(true)
+    try {
+      const { error } = await supabase
+        .from('teachers')
+        .update({ 
+          full_name: fullName, 
+          avatar_url: avatarUrl 
+        })
+        .eq('id', currentId)
+
+      if (error) throw error
+
+      toast('تم تحديث الملف الشخصي بنجاح')
+      if (refreshProfile) {
+        await refreshProfile()
+      }
+    } catch (error) {
+      console.error(error)
+      toast('تعذر حفظ البيانات', 'error')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <div className="card p-6">
+      <div className="card p-6 bg-white shadow-sm rounded-2xl">
         <h1 className="text-xl font-extrabold text-slate-800 mb-6">الملف الشخصي للمعلم</h1>
 
         <form onSubmit={handleSave} className="space-y-6">
           {/* معاينة الصورة ورفعها */}
           <div className="flex items-center gap-4">
-            <div className="relative h-20 w-20 overflow-hidden rounded-full bg-slate-100 border-2 border-slate-200 flex items-center justify-center">
+            <div className="relative h-20 w-20 overflow-hidden rounded-full bg-slate-100 border-2 border-slate-200 flex items-center justify-center shrink-0">
               {avatarUrl ? (
                 <img src={avatarUrl} alt="Profile" className="h-full w-full object-cover" />
               ) : (
@@ -91,6 +118,7 @@ export default function ProfilePage() {
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-primary-500 focus:outline-none"
+              placeholder="اكتب اسمك هنا"
               required
             />
           </div>
@@ -100,7 +128,7 @@ export default function ProfilePage() {
             <label className="block text-sm font-bold text-slate-700 mb-2">البريد الإلكتروني</label>
             <input
               type="email"
-              value={profile?.email || ''}
+              value={email}
               disabled
               className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500 cursor-not-allowed"
               dir="ltr"
@@ -110,7 +138,7 @@ export default function ProfilePage() {
           <button
             type="submit"
             disabled={saving}
-            className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-6 py-3 text-sm font-bold text-white transition hover:bg-primary-700"
+            className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-6 py-3 text-sm font-bold text-white transition hover:bg-primary-700 disabled:opacity-50"
           >
             <Save className="h-4 w-4" />
             {saving ? 'جاري الحفظ...' : 'حفظ التعديلات'}
