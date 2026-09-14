@@ -40,39 +40,54 @@ export default function PaymentsPage() {
   const [printOpen, setPrintOpen] = useState(false)
 
   const load = async () => {
+    if (!teacherId) return
     setLoading(true)
-    const [{ data: myStudentIds }, sRes, gRes] = await Promise.all([
-      supabase.from('students').select('id').eq('teacher_id', teacherId),
-      supabase
-        .from('students')
-        .select('*, groups(group_name, color_code)')
-        .eq('teacher_id', teacherId)
-        .order('created_at'),
-      supabase
-        .from('groups')
-        .select('*')
-        .eq('teacher_id', teacherId)
-        .order('created_at'),
-    ])
+    try {
+      const [sRes, gRes] = await Promise.all([
+        supabase
+          .from('students')
+          .select('*')
+          .eq('teacher_id', teacherId)
+          .order('created_at'),
+        supabase
+          .from('groups')
+          .select('*')
+          .eq('teacher_id', teacherId)
+          .order('created_at'),
+      ])
 
-    const ids = myStudentIds?.map((s) => s.id) ?? []
-    const { data: pRes } = ids.length
-      ? await supabase
+      const studentList = sRes.data ?? []
+      const groupList = gRes.data ?? []
+
+      let pRes = []
+      if (studentList.length > 0) {
+        const studentIds = studentList.map((s) => s.id)
+        const { data: paymentsData } = await supabase
           .from('payments')
-          .select('*, students(student_name)')
-          .in('student_id', ids)
+          .select('*')
+          .in('student_id', studentIds)
           .order('created_at', { ascending: false })
-      : { data: [] }
+        pRes = paymentsData ?? []
+      }
 
-    setStudents(sRes.data ?? [])
-    setGroups(gRes.data ?? [])
-    setPayments(pRes ?? [])
-    setLoading(false)
+      setStudents(studentList)
+      setGroups(groupList)
+      setPayments(pRes)
+    } catch (err) {
+      console.error('Error loading payments:', err)
+      toast('تعذر تحميل بيانات المدفوعات', 'error')
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => {
-    load()
-  }, [])
+    if (teacherId) {
+      load()
+    }
+  }, [teacherId])
+
+  const groupById = (id) => groups.find((g) => g.id === id)
 
   const filteredStudents = useMemo(() => {
     return students.filter((s) => {
@@ -106,10 +121,11 @@ export default function PaymentsPage() {
   const exportExcel = () => {
     const rows = filteredStudents.map((s, i) => {
       const st = studentStats(s)
+      const grp = groupById(s.group_id)
       return [
         i + 1,
         s.student_name,
-        s.groups?.group_name || 'بدون مجموعة',
+        grp?.group_name || 'بدون مجموعة',
         fmtMoney(st.total),
         fmtMoney(st.paid),
         fmtMoney(st.remaining),
@@ -128,10 +144,11 @@ export default function PaymentsPage() {
   const printColumns = ['م', 'اسم الطالب', 'المجموعة', 'المستحق', 'المدفوع', 'المتبقي', 'الحالة']
   const printRows = filteredStudents.map((s, i) => {
     const st = studentStats(s)
+    const grp = groupById(s.group_id)
     return [
       i + 1,
       s.student_name,
-      s.groups?.group_name || 'بدون مجموعة',
+      grp?.group_name || 'بدون مجموعة',
       `${fmtMoney(st.total)} ج.م`,
       `${fmtMoney(st.paid)} ج.م`,
       `${fmtMoney(st.remaining)} ج.م`,
@@ -139,9 +156,9 @@ export default function PaymentsPage() {
     ]
   })
 
-  const openCreate = (studentId = '') => {
+  const openCreate = (targetStudentId = '') => {
     setEditing(null)
-    setStudentId(studentId || filteredStudents[0]?.id || '')
+    setStudentId(targetStudentId || filteredStudents[0]?.id || '')
     setAmount('')
     setModalOpen(true)
   }
@@ -325,6 +342,7 @@ export default function PaymentsPage() {
 
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
           {filteredStudents.map((s) => {
+            const grp = groupById(s.group_id)
             const ps = paymentsFor(s.id)
             const total = ps.reduce((x, p) => x + Number(p.amount || 0), 0)
             const paidSum = ps.reduce((x, p) => x + (p.is_paid ? Number(p.amount || 0) : 0), 0)
@@ -344,14 +362,14 @@ export default function PaymentsPage() {
                   <div className="flex items-center gap-2.5 overflow-hidden">
                     <span
                       className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl text-sm font-extrabold text-white"
-                      style={{ backgroundColor: s.groups?.color_code || '#2547eb' }}
+                      style={{ backgroundColor: grp?.color_code || '#2547eb' }}
                     >
                       {s.student_name.charAt(0)}
                     </span>
                     <div className="truncate">
                       <p className="font-bold text-slate-800 truncate">{s.student_name}</p>
                       <p className="text-xs font-semibold text-slate-400 truncate">
-                        {s.groups?.group_name || 'بدون مجموعة'}
+                        {grp?.group_name || 'بدون مجموعة'}
                       </p>
                     </div>
                   </div>
@@ -401,16 +419,16 @@ export default function PaymentsPage() {
           <p className="py-10 text-center text-sm text-slate-400">لا توجد دفعات مسجلة بعد</p>
         ) : (
           <>
-            {/* 📱 عرض الموبايل: كروت خفيفة تحت بعضها */}
             <div className="block md:hidden divide-y divide-slate-100">
               {payments.map((p) => {
                 const st = p.is_paid
                   ? { label: 'مدفوع', cls: 'bg-emerald-100 text-emerald-700' }
                   : { label: 'غير مدفوع', cls: 'bg-rose-100 text-rose-700' }
+                const studentObj = students.find((s) => s.id === p.student_id)
                 return (
                   <div key={p.id} className="p-4 space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-slate-800">{p.students?.student_name || '—'}</span>
+                      <span className="font-bold text-slate-800">{studentObj?.student_name || '—'}</span>
                       <span className={`badge ${st.cls}`}>{st.label}</span>
                     </div>
                     <div className="flex items-center justify-between text-xs text-slate-500">
@@ -448,7 +466,6 @@ export default function PaymentsPage() {
               })}
             </div>
 
-            {/* 💻 عرض الشاشات الكبيرة: جدول متكامل */}
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full min-w-[680px]">
                 <thead className="border-b border-slate-100 bg-slate-50">
@@ -465,9 +482,10 @@ export default function PaymentsPage() {
                     const st = p.is_paid
                       ? { label: 'مدفوع', cls: 'bg-emerald-100 text-emerald-700' }
                       : { label: 'غير مدفوع', cls: 'bg-rose-100 text-rose-700' }
+                    const studentObj = students.find((s) => s.id === p.student_id)
                     return (
                       <tr key={p.id} className="transition hover:bg-slate-50/60">
-                        <td className="td font-bold">{p.students?.student_name || '—'}</td>
+                        <td className="td font-bold">{studentObj?.student_name || '—'}</td>
                         <td className="td text-center">{fmtMoney(p.amount)} ج.م</td>
                         <td className="td text-center">
                           <span className={`badge ${st.cls}`}>{st.label}</span>
