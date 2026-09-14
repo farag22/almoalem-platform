@@ -25,6 +25,7 @@ export default function Dashboard() {
   const [todayAttendance, setTodayAttendance] = useState([])
   const [loading, setLoading] = useState(true)
 
+  // جلب أحدث بيانات المعلم مباشرة لضمان ظهور الصورة والاسم المحدثين فوراً
   useEffect(() => {
     async function fetchLatestProfile() {
       if (!user?.email && !teacherId) return
@@ -48,10 +49,12 @@ export default function Dashboard() {
     setLoading(true)
     const today = new Date().toISOString().slice(0, 10)
 
+    const targetTeacherId = currentProfile?.id || teacherId
+
     const { data: myStudentIds } = await supabase
       .from('students')
       .select('id')
-      .eq('teacher_id', teacherId)
+      .eq('teacher_id', targetTeacherId)
 
     const ids = myStudentIds?.map((s) => s.id) ?? []
 
@@ -59,9 +62,9 @@ export default function Dashboard() {
       supabase
         .from('groups')
         .select('id, group_name, color_code')
-        .eq('teacher_id', teacherId)
+        .eq('teacher_id', targetTeacherId)
         .order('created_at'),
-      supabase.from('students').select('id, group_id').eq('teacher_id', teacherId),
+      supabase.from('students').select('id, group_id').eq('teacher_id', targetTeacherId),
       ids.length
         ? supabase.from('attendance').select('student_id, session_date, status').in('student_id', ids)
         : Promise.resolve({ data: [] }),
@@ -102,10 +105,10 @@ export default function Dashboard() {
   }
 
   useEffect(() => {
-    if (teacherId) {
+    if (teacherId || currentProfile?.id) {
       load()
     }
-  }, [teacherId])
+  }, [teacherId, currentProfile?.id])
 
   if (loading) {
     return (
@@ -118,35 +121,42 @@ export default function Dashboard() {
   const cards = [
     {
       title: 'إجمالي الطلاب',
-      value: stats.students,
+      value: stats?.students || 0,
       icon: Users,
       color: 'bg-primary-50 text-primary-600',
       to: '/dashboard/students',
     },
     {
       title: 'المجاميع',
-      value: stats.groups,
+      value: stats?.groups || 0,
       icon: Layers,
       color: 'bg-violet-50 text-violet-600',
       to: '/dashboard/groups',
     },
     {
       title: 'حضور اليوم',
-      value: `${stats.attendanceCoverage}%`,
-      sub: `${stats.attendanceToday} / ${stats.students}`,
+      value: `${stats?.attendanceCoverage || 0}%`,
+      sub: `${stats?.attendanceToday || 0} / ${stats?.students || 0}`,
       icon: CalendarCheck,
       color: 'bg-emerald-50 text-emerald-600',
       to: '/dashboard/attendance',
     },
     {
       title: 'المحصّل من المصاريف',
-      value: `${stats.totalCollected.toLocaleString('ar-EG')}`,
-      sub: 'من أصل ' + stats.totalExpected.toLocaleString('ar-EG') + ' ج.م',
+      value: `${(stats?.totalCollected || 0).toLocaleString('ar-EG')}`,
+      sub: 'من أصل ' + (stats?.totalExpected || 0).toLocaleString('ar-EG') + ' ج.م',
       icon: Wallet,
       color: 'bg-amber-50 text-amber-600',
       to: '/dashboard/payments',
     },
   ]
+
+  // تحديد الاسم وصورة المعلم مع إعطاء الأولوية للـ full_name و avatar_url المحفوظين
+  const displayName = currentProfile?.full_name && currentProfile.full_name.trim() !== ''
+    ? currentProfile.full_name
+    : (user?.email || 'أستاذي الفاضل');
+
+  const displayAvatar = currentProfile?.avatar_url;
 
   return (
     <div className="space-y-6">
@@ -155,15 +165,15 @@ export default function Dashboard() {
         <div className="flex items-center gap-4">
           {/* دائرة الصورة الشخصية */}
           <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white/10 text-xl font-bold text-white overflow-hidden border-2 border-white/20 shadow-inner">
-            {currentProfile?.avatar_url ? (
-              <img src={currentProfile.avatar_url} alt="Profile" className="h-full w-full object-cover" />
+            {displayAvatar ? (
+              <img src={displayAvatar} alt="Profile" className="h-full w-full object-cover" />
             ) : (
-              (currentProfile?.full_name || user?.email || 'م').charAt(0).toUpperCase()
+              displayName.charAt(0).toUpperCase()
             )}
           </div>
           <div>
             <h1 className="text-2xl font-extrabold">
-              مرحباً، {currentProfile?.full_name || user?.email || 'أستاذي الفاضل'}
+              مرحباً، {displayName}
             </h1>
             <p className="mt-1 text-sm text-indigo-200">
               إليك ملخص منصتك لهذا اليوم — {fmtDate(new Date())}
@@ -251,19 +261,19 @@ export default function Dashboard() {
           <div className="grid grid-cols-3 gap-3">
             <Pill
               label="حاضر"
-              value={stats.present}
+              value={stats?.present || 0}
               cls="bg-emerald-50 text-emerald-700"
               icon={<UserCheck className="h-4 w-4" />}
             />
             <Pill
               label="غائب"
-              value={stats.absent}
+              value={stats?.absent || 0}
               cls="bg-rose-50 text-rose-700"
               icon={<UserX className="h-4 w-4" />}
             />
             <Pill
               label="متأخر"
-              value={stats.late}
+              value={stats?.late || 0}
               cls="bg-amber-50 text-amber-700"
               icon={<Clock className="h-4 w-4" />}
             />
