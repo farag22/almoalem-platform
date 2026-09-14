@@ -36,16 +36,25 @@ export default function QuickGradingModal({
 
   const load = async (group) => {
     setLoading(true)
-    let q = supabase
+    console.log("Loading students for teacherId:", teacherId)
+
+    // جلب كل الطلاب بدون شروط معقدة لنرى هل يوجد طلاب أصلاً
+    const { data, error } = await supabase
       .from('students')
-      .select('*, groups(group_name)')
+      .select('*')
       .eq('teacher_id', teacherId)
       .order('student_name')
-    
-    const { data } = await q
+
+    if (error) {
+      console.error('Error fetching students:', error)
+      toast('خطأ في جلب الطلاب', 'error')
+      setLoading(false)
+      return
+    }
+
+    console.log("Fetched students raw data:", data)
     let list = data ?? []
-    
-    // التصفية برمجياً بطريقة آمنة لا تفشل أبداً
+
     if (group && group !== 'all') {
       list = list.filter((s) => s.group_id === group)
     }
@@ -85,7 +94,7 @@ export default function QuickGradingModal({
       return {
         title,
         session_date: sessionDate,
-        group_name: s.groups?.group_name || 'بدون مجموعة',
+        group_name: groups.find(g => g.id === s.group_id)?.group_name || 'بدون مجموعة',
         student_name: s.student_name,
         homework_status: r.homework,
         score,
@@ -184,7 +193,7 @@ export default function QuickGradingModal({
         <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
           <GraduationCap className="h-10 w-10 text-slate-300" />
           <p className="text-sm font-bold text-slate-500">لا يوجد طلاب في هذا التحديد</p>
-          <p className="text-xs text-slate-400">أضف طلاباً إلى المجموعة أولاً</p>
+          <p className="text-xs text-slate-400">تأكد من إضافة طلاب في صفحة الطلاب أولاً</p>
         </div>
       ) : (
         <div className="flex flex-col gap-2">
@@ -195,7 +204,7 @@ export default function QuickGradingModal({
               <div key={s.id} className="rounded-2xl border border-slate-200/80 bg-slate-50/60 p-3">
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <div className="flex min-w-0 items-center gap-2">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-extrabold text-white">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-extrabold text-white bg-primary-600">
                       {s.student_name.charAt(0)}
                     </span>
                     <p className="truncate text-sm font-bold text-slate-700">{s.student_name}</p>
@@ -207,7 +216,6 @@ export default function QuickGradingModal({
                 </div>
 
                 <div className="flex flex-wrap items-end gap-2">
-                  {/* Homework toggle */}
                   <button
                     type="button"
                     onClick={() => cycleHomework(s.id)}
@@ -222,7 +230,6 @@ export default function QuickGradingModal({
                     {hw.label} ← اضغط للتبديل
                   </button>
 
-                  {/* Score */}
                   <div className="flex items-center gap-1">
                     <input
                       type="number"
@@ -246,7 +253,6 @@ export default function QuickGradingModal({
                   </div>
                 </div>
 
-                {/* Note */}
                 <div className="relative mt-2">
                   <StickyNote className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   <input
