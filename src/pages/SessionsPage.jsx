@@ -1,5 +1,6 @@
-import { useEffect, useState, useMemo } from 'react'
-import { Calendar, QrCode, Search, CheckCircle2, XCircle, Users, Check, Phone } from 'lucide-react'
+import { useEffect, useState, useMemo, useRef } from 'react'
+import { Calendar, QrCode, Search, CheckCircle2, XCircle, Users, Camera, StopCircle } from 'lucide-react'
+import { Html5QrcodeScanner } from 'html5-qrcode'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../components/ui/Toast'
@@ -17,6 +18,8 @@ export default function SessionsPage() {
   const [groupFilter, setGroupFilter] = useState('all')
   const [scannerOpen, setScannerOpen] = useState(false)
   const [manualCode, setManualCode] = useState('')
+  const [cameraActive, setCameraActive] = useState(false)
+  const scannerRef = useRef(null)
 
   const todayStr = new Date().toISOString().slice(0, 10)
 
@@ -45,7 +48,7 @@ export default function SessionsPage() {
       const studentList = sRes.data ?? []
       const attMap = {}
       attRes.data?.forEach((att) => {
-        attMap[att.student_id] = att.status // 'present' أو 'absent'
+        attMap[att.student_id] = att.status
       })
 
       setStudents(studentList)
@@ -65,11 +68,60 @@ export default function SessionsPage() {
     }
   }, [teacherId])
 
+  // تشغيل وإيقاف كاميرا قارئ الـ QR
+  useEffect(() => {
+    let qrScanner = null
+    if (scannerOpen && cameraActive) {
+      try {
+        qrScanner = new Html5QrcodeScanner(
+          'qr-reader',
+          { fps: 10, qrbox: { width: 250, height: 250 } },
+          false
+        )
+        qrScanner.render(
+          (decodedText) => {
+            handleScannedCode(decodedText)
+            if (qrScanner) {
+              qrScanner.clear().catch(() => {})
+            }
+            setCameraActive(false)
+            setScannerOpen(false)
+          },
+          (error) => {
+            // أخطاء المسح المؤقتة أثناء توجيه الكاميرا يتم تجاهلها
+          }
+        )
+      } catch (e) {
+        console.error('Camera init error:', e)
+      }
+    }
+
+    return () => {
+      if (qrScanner) {
+        qrScanner.clear().catch(() => {})
+      }
+    }
+  }, [scannerOpen, cameraActive, students])
+
+  const handleScannedCode = (code) => {
+    const cleanCode = code.trim().toLowerCase()
+    const student = students.find(
+      (s) =>
+        s.student_code?.toLowerCase() === cleanCode ||
+        s.id?.toLowerCase() === cleanCode
+    )
+    if (!student) {
+      toast(`لم يتم التعرف على الكود: ${code}`, 'error')
+      return
+    }
+    markAttendance(student.id, 'present')
+    toast(`تم تسجيل حضور: ${student.student_name}`)
+  }
+
   const groupById = (id) => groups.find((g) => g.id === id)
 
   const markAttendance = async (studentId, status) => {
     try {
-      // تحقق مما إذا كان هناك سجل حضور لهذا الطالب اليوم
       const { data: existing } = await supabase
         .from('attendance')
         .select('id')
@@ -99,7 +151,6 @@ export default function SessionsPage() {
       }
 
       setAttendanceToday((prev) => ({ ...prev, [studentId]: status }))
-      toast(status === 'present' ? 'تم تسجيل الحضور بنجاح' : 'تم تسجيل الغياب')
     } catch (err) {
       console.error('Attendance error:', err)
       toast('تعذر تسجيل الحضور', 'error')
@@ -111,16 +162,10 @@ export default function SessionsPage() {
       toast('أدخل كود الطالب', 'error')
       return
     }
-    const student = students.find(
-      (s) => s.student_code?.toLowerCase() === manualCode.trim().toLowerCase()
-    )
-    if (!student) {
-      toast('لم يتم العثور على طالب بهذا الكود', 'error')
-      return
-    }
-    markAttendance(student.id, 'present')
+    handleScannedCode(manualCode)
     setManualCode('')
     setScannerOpen(false)
+    setCameraActive(false)
   }
 
   const filteredStudents = useMemo(() => {
@@ -147,10 +192,16 @@ export default function SessionsPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-extrabold text-slate-800">إدارة الحضور بـ QR Code</h1>
-          <p className="mt-1 text-sm text-slate-500">امح أو اضغط لتسجيل حضور الطلاب حصة اليوم ({todayStr})</p>
+          <p className="mt-1 text-sm text-slate-500">امسح الكود بالكاميرا أو اضغط لتسجيل حضور حصة اليوم ({todayStr})</p>
         </div>
-        <button onClick={() => setScannerOpen(true)} className="btn-primary w-full sm:w-auto justify-center">
-          <QrCode className="h-5 w-5" /> مسح كود طالب / إدخال سريع
+        <button
+          onClick={() => {
+            setScannerOpen(true)
+            setCameraActive(true)
+          }}
+          className="btn-primary w-full sm:w-auto justify-center"
+        >
+          <Camera className="h-5 w-5" /> فتح قارئ الباركود (الكاميرا)
         </button>
       </div>
 
@@ -179,7 +230,7 @@ export default function SessionsPage() {
         </select>
       </div>
 
-      {/* Students list for QR attendance */}
+      {/* Students list */}
       {filteredStudents.length === 0 ? (
         <div className="card flex flex-col items-center justify-center gap-3 py-16 text-center">
           <Users className="h-12 w-12 text-slate-300" />
@@ -211,7 +262,6 @@ export default function SessionsPage() {
                     </div>
                   </div>
 
-                  {/* QR Image Simulation using public API */}
                   <div className="bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm">
                     <img
                       src={`https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${encodeURIComponent(s.student_code || s.id)}`}
@@ -221,10 +271,12 @@ export default function SessionsPage() {
                   </div>
                 </div>
 
-                {/* Attendance Buttons */}
                 <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
                   <button
-                    onClick={() => markAttendance(s.id, 'present')}
+                    onClick={() => {
+                      markAttendance(s.id, 'present')
+                      toast('تم تسجيل الحضور بنجاح')
+                    }}
                     className={`flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-bold transition ${
                       status === 'present'
                         ? 'bg-emerald-600 text-white shadow-sm'
@@ -234,7 +286,10 @@ export default function SessionsPage() {
                     <CheckCircle2 className="h-4 w-4" /> حاضر
                   </button>
                   <button
-                    onClick={() => markAttendance(s.id, 'absent')}
+                    onClick={() => {
+                      markAttendance(s.id, 'absent')
+                      toast('تم تسجيل الغياب')
+                    }}
                     className={`flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-bold transition ${
                       status === 'absent'
                         ? 'bg-rose-600 text-white shadow-sm'
@@ -250,36 +305,59 @@ export default function SessionsPage() {
         </div>
       )}
 
-      {/* Manual Code Scanner Modal */}
+      {/* Camera & Manual Scanner Modal */}
       <Modal
         open={scannerOpen}
-        onClose={() => setScannerOpen(false)}
-        title="إدخال أو مسح كود QR للطالب"
+        onClose={() => {
+          setScannerOpen(false)
+          setCameraActive(false)
+        }}
+        title="قارئ كود الـ QR والباركود"
         footer={
           <>
-            <button onClick={() => setScannerOpen(false)} className="btn-outline">إلغاء</button>
+            <button
+              onClick={() => {
+                setScannerOpen(false)
+                setCameraActive(false)
+              }}
+              className="btn-outline"
+            >
+              إغلاق
+            </button>
             <button onClick={handleManualScan} className="btn-primary">
-              تسجيل الحضور
+              تسجيل الكود يدوياً
             </button>
           </>
         }
       >
         <div className="space-y-4">
-          <div className="flex flex-col items-center justify-center py-4 bg-slate-50 rounded-2xl border border-slate-100">
-            <QrCode className="h-16 w-16 text-primary-600 mb-2" />
-            <p className="text-xs text-slate-500 text-center px-4">
-              أدخل كود ولي الأمر (مثال: std-xxxxx) أو مرر الماسح الضوئي لتسجيل الحضور فوراً
-            </p>
-          </div>
+          {cameraActive ? (
+            <div className="relative overflow-hidden rounded-2xl bg-black p-2">
+              <div id="qr-reader" className="w-full"></div>
+              <button
+                onClick={() => setCameraActive(false)}
+                className="mt-2 w-full flex items-center justify-center gap-2 rounded-xl bg-rose-600 py-2 text-xs font-bold text-white"
+              >
+                <StopCircle className="h-4 w-4" /> إيقاف الكاميرا
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setCameraActive(true)}
+              className="w-full flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-primary-300 bg-primary-50 py-6 text-sm font-bold text-primary-700 transition hover:bg-primary-100"
+            >
+              <Camera className="h-6 w-6" /> اضغط هنا لتشغيل الكاميرا للمسح
+            </button>
+          )}
+
           <div>
-            <label className="label">كود الـ QR الخاص بالطالب</label>
+            <label className="label">أو أدخل كود الطالب يدوياً / جهاز الباركود</label>
             <input
               className="input font-mono text-center text-lg uppercase"
               dir="ltr"
               value={manualCode}
               onChange={(e) => setManualCode(e.target.value)}
               placeholder="std-xxxxxx"
-              autoFocus
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleManualScan()
               }}
