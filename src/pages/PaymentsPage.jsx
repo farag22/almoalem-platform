@@ -196,7 +196,7 @@ export default function PaymentsPage() {
       if (error) toast('تعذر تعديل الدفعة', 'error')
       else toast('تم تعديل الدفعة')
     } else {
-      const { error } = await supabase.from('payments').insert(payload)
+      const { error } = await supabase.from('payments').insert([payload])
       if (error) toast('تعذر إضافة الدفعة', 'error')
       else toast('تم إضافة الدفعة')
     }
@@ -224,17 +224,22 @@ export default function PaymentsPage() {
       return
     }
     setSaving(true)
-    const { error } = await supabase.from('payments').insert({
+    const payload = {
       student_id: payingStudent.id,
       amount: Number(payAmount),
       is_paid: true,
       paid_at: new Date().toISOString(),
-    })
-    if (error) toast('تعذر تسجيل الدفعة', 'error')
-    else toast(`تم تسجيل دفع ${fmtMoney(payAmount)} ج.م`)
+    }
+    const { error } = await supabase.from('payments').insert([payload])
+    if (error) {
+      console.error('Payment error:', error)
+      toast('تعذر تسجيل الدفعة', 'error')
+    } else {
+      toast(`تم تسجيل دفع ${fmtMoney(payAmount)} ج.م`)
+      setPayModalOpen(false)
+      await load()
+    }
     setSaving(false)
-    setPayModalOpen(false)
-    load()
   }
 
   const remove = async (p) => {
