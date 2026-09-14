@@ -12,6 +12,7 @@ import {
   X,
   Phone,
   Calendar,
+  User,
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { ToastProvider } from '../ui/Toast'
@@ -87,18 +88,23 @@ function SidebarContent({ onNavigate }) {
         )}
       </nav>
 
-      <div className="border-t border-white/10 p-4">
-        <div className="mb-3 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-lg font-bold text-white">
-            {(profile?.full_name || 'م').charAt(0)}
+      <div className="border-t border-white/10 p-4 space-y-3">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-lg font-bold text-white overflow-hidden border border-white/20">
+            {profile?.avatar_url ? (
+              <img src={profile.avatar_url} alt="Profile" className="h-full w-full object-cover" />
+            ) : (
+              (profile?.full_name || 'م').charAt(0)
+            )}
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-bold text-white">
               {profile?.full_name || 'المعلم'}
             </p>
             <p className="truncate text-xs text-indigo-200">{profile?.email || ''}</p>
           </div>
         </div>
+
         <button
           onClick={async () => {
             await signOut()
@@ -136,7 +142,7 @@ export default function DashboardLayout() {
           </div>
         </aside>
 
-        {/* Sidebar mobile drawer (if opened from header) */}
+        {/* Sidebar mobile drawer */}
         {mobileOpen && (
           <div className="fixed inset-0 z-50 lg:hidden">
             <div className="absolute inset-0 bg-slate-900/60" onClick={() => setMobileOpen(false)} />
