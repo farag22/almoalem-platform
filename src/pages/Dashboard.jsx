@@ -47,13 +47,13 @@ export default function Dashboard() {
         ? supabase.from('attendance').select('student_id').in('student_id', ids)
         : Promise.resolve({ data: [] }),
       ids.length
-        ? supabase.from('payments').select('amount, is_paid').in('student_id', ids)
+        ? supabase.from('payments').select('amount, notes').in('student_id', ids)
         : Promise.resolve({ data: [] }),
       ids.length
         ? supabase
             .from('attendance')
             .select('status, student_id, students(student_name)')
-            .eq('session_date', today)
+            .eq('date', today) // تم التعديل ليستعمل عمود date الصحيح في قاعدة البيانات
             .in('student_id', ids)
             .order('created_at')
         : Promise.resolve({ data: [] }),
@@ -71,12 +71,12 @@ export default function Dashboard() {
       students: students.length,
       groups: g.data?.length ?? 0,
       attendanceToday: todayStatus.length,
-      present: todayStatus.filter((x) => x.status === 'present').length,
-      absent: todayStatus.filter((x) => x.status === 'absent').length,
-      late: todayStatus.filter((x) => x.status === 'late').length,
+      present: todayStatus.filter((x) => x.status === 'present' || x.status === 'حاضر').length,
+      absent: todayStatus.filter((x) => x.status === 'absent' || x.status === 'غائب').length,
+      late: todayStatus.filter((x) => x.status === 'late' || x.status === 'متأخر').length,
       attendanceCoverage:
         students.length > 0 ? Math.round((todayStatus.length / students.length) * 100) : 0,
-      totalCollected: payments.reduce((sum, x) => sum + (x.is_paid ? Number(x.amount || 0) : 0), 0),
+      totalCollected: payments.reduce((sum, x) => sum + (x.notes === 'تم الدفع' ? Number(x.amount || 0) : 0), 0),
       totalExpected: payments.reduce((sum, x) => sum + Number(x.amount || 0), 0),
       attendanceTotal: attendanceRecords.length,
     })
@@ -93,7 +93,7 @@ export default function Dashboard() {
       .from('attendance')
       .select('id')
       .eq('student_id', studentId)
-      .eq('session_date', today)
+      .eq('date', today) // استخدام عمود date
       .maybeSingle()
 
     if (existing.data) {
@@ -106,7 +106,7 @@ export default function Dashboard() {
     } else {
       const { error } = await supabase
         .from('attendance')
-        .insert({ student_id: studentId, session_date: today, status })
+        .insert({ student_id: studentId, date: today, status }) // استخدام عمود date
       if (error) toast('تعذر تسجيل الحضور', 'error')
       else toast('تم تسجيل الحضور')
     }
@@ -179,7 +179,6 @@ export default function Dashboard() {
           >
             إضافة طالب
           </Link>
-          {/* رابط تنزيل التطبيق المباشر */}
           <a
             href="https://apk.e-droid.net/apk/app4153335-qeh2f5.apk?v=1"
             target="_blank"
@@ -258,14 +257,6 @@ export default function Dashboard() {
               icon={<Clock className="h-4 w-4" />}
             />
           </div>
-          {todayAttendance.length > 0 && (
-            <div className="mt-4 flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
-              <span className="text-sm font-semibold text-slate-600">تم تسجيل</span>
-              <span className="text-sm font-extrabold text-slate-800">
-                {todayAttendance.length} من {stats.students} طالب
-              </span>
-            </div>
-          )}
         </div>
 
         {/* Groups overview */}
@@ -316,55 +307,6 @@ export default function Dashboard() {
           )}
         </div>
       </div>
-
-      {/* Quick attendance - today's roster */}
-      {todayAttendance.length > 0 && (
-        <div className="card p-6">
-          <h2 className="mb-4 text-lg font-extrabold text-slate-800">سجل حضور اليوم سريعاً</h2>
-          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-            {todayAttendance.map((row) => {
-              const name = row.students?.student_name ?? 'طالب'
-              const setStatus = (s) => quickMark(row.student_id, s)
-              return (
-                <div
-                  key={row.student_id}
-                  className="flex items-center justify-between rounded-xl border border-slate-100 px-3 py-2.5"
-                >
-                  <span className="truncate text-sm font-semibold text-slate-700">{name}</span>
-                  <div className="flex gap-1">
-                    {['present', 'absent', 'late'].map((s) => (
-                      <button
-                        key={s}
-                        onClick={() => setStatus(s)}
-                        title={s}
-                        className={`h-7 w-7 rounded-lg text-xs font-bold transition ${
-                          row.status === s
-                            ? 'text-white'
-                            : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
-                        }`}
-                        style={
-                          row.status === s
-                            ? {
-                                backgroundColor:
-                                  s === 'present'
-                                    ? '#10b981'
-                                    : s === 'absent'
-                                    ? '#ef4444'
-                                    : '#f59e0b',
-                              }
-                            : undefined
-                        }
-                      >
-                        {s === 'present' ? 'ح' : s === 'absent' ? 'غ' : 'ت'}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
     </div>
   )
 }
@@ -379,4 +321,4 @@ function Pill({ label, value, cls, icon }) {
       <p className="text-2xl font-extrabold">{value}</p>
     </div>
   )
-        }
+}
