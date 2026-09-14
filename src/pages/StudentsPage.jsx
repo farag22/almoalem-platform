@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Plus, Pencil, Trash2, Search, Users, Copy, Check, Phone, KeyRound, FileSpreadsheet, Printer, ClipboardList, CheckCircle2, XCircle, Wallet } from 'lucide-react'
+import { Plus, Pencil, Trash2, Search, Users, Copy, Check, Phone, KeyRound, FileSpreadsheet, Printer, ClipboardList, CheckCircle2, XCircle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../components/ui/Toast'
@@ -63,10 +63,9 @@ export default function StudentsPage() {
         ])
         pRes = paymentsData.data ?? []
         
-        // احفظ أحدث حالة حضور لكل طالب
         attData.data?.forEach((att) => {
           if (!attMap[att.student_id]) {
-            attMap[att.student_id] = att.status // 'present' أو 'absent'
+            attMap[att.student_id] = att.status
           }
         })
       }
@@ -322,17 +321,26 @@ export default function StudentsPage() {
             const { total, paid, remaining } = paymentStatsFor(s.id)
             const attStatus = attendanceMap[s.id]
             return (
-              <div key={s.id} className="card p-3 space-y-3">
+              <div key={s.id} className="card p-3 space-y-2.5">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex min-w-0 items-center gap-2.5">
                     <span
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-extrabold text-white"
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-extrabold text-white"
                       style={{ backgroundColor: grp?.color_code || '#2547eb' }}
                     >
                       {s.student_name.charAt(0)}
                     </span>
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-bold text-slate-700">{s.student_name}</p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-extrabold text-slate-800">{s.student_name}</p>
+                        {total === 0 ? (
+                          <span className="text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full font-bold">بدون مطالبات</span>
+                        ) : remaining === 0 ? (
+                          <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-bold">مدفوع ({fmtMoney(paid)})</span>
+                        ) : (
+                          <span className="text-[10px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full font-bold">متبقي: {fmtMoney(remaining)}</span>
+                        )}
+                      </div>
                       <div className="mt-1 flex items-center gap-1.5 flex-wrap">
                         {grp ? (
                           <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
@@ -343,7 +351,6 @@ export default function StudentsPage() {
                           <span className="text-[10px] text-slate-400">بدون مجموعة</span>
                         )}
 
-                        {/* حالة الحضور */}
                         {attStatus === 'present' ? (
                           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
                             <CheckCircle2 className="h-3 w-3" /> حاضر
@@ -378,22 +385,7 @@ export default function StudentsPage() {
                   </div>
                 </div>
 
-                {/* نسبة المصروفات */}
-                <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 text-xs font-bold">
-                  <span className="flex items-center gap-1.5 text-slate-600">
-                    <Wallet className="h-4 w-4 text-slate-400" />
-                    المصروفات:
-                  </span>
-                  {total === 0 ? (
-                    <span className="text-slate-400">لا توجد مطالبات</span>
-                  ) : remaining === 0 ? (
-                    <span className="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">مدفوع بالكامل ({fmtMoney(paid)})</span>
-                  ) : (
-                    <span className="text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">متبقي: {fmtMoney(remaining)}</span>
-                  )}
-                </div>
-
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-slate-100 pt-2.5">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-slate-100 pt-2">
                   <div className="flex min-w-0 items-center gap-1.5 text-xs text-slate-500">
                     <KeyRound className="h-3.5 w-3.5 shrink-0 text-slate-400" />
                     <code className="truncate rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[11px]" dir="ltr">
@@ -432,7 +424,7 @@ export default function StudentsPage() {
                     target="_blank"
                     rel="noopener noreferrer"
                     title="تذكير واتساب بسداد المصاريف"
-                    className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-[#25D366] px-2.5 py-1.5 text-[11px] font-bold text-white transition hover:bg-[#1fb355]"
+                    className="mt-1 inline-flex items-center gap-1.5 rounded-lg bg-[#25D366] px-2.5 py-1.5 text-[11px] font-bold text-white transition hover:bg-[#1fb355]"
                   >
                     <WaIcon className="h-3.5 w-3.5" />
                     تذكير بالمصاريف
