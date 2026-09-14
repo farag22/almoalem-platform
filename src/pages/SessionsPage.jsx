@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from 'react'
 import { Calendar, QrCode, Search, CheckCircle2, XCircle, Users, Camera, StopCircle } from 'lucide-react'
-import { Html5QrcodeScanner } from 'html5-qrcode'
+import { Html5Qrcode } from 'html5-qrcode'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../components/ui/Toast'
@@ -18,8 +18,7 @@ export default function SessionsPage() {
   const [groupFilter, setGroupFilter] = useState('all')
   const [scannerOpen, setScannerOpen] = useState(false)
   const [manualCode, setManualCode] = useState('')
-  const [cameraActive, setCameraActive] = useState(false)
-  const scannerRef = useRef(null)
+  const html5QrCodeRef = useRef(null)
 
   const todayStr = new Date().toISOString().slice(0, 10)
 
@@ -68,40 +67,53 @@ export default function SessionsPage() {
     }
   }, [teacherId])
 
-  // تشغيل وإيقاف كاميرا قارئ الـ QR
+  // فتح الكاميرا الخلفية تلقائياً عند فتح النافذة
   useEffect(() => {
-    let qrScanner = null
-    if (scannerOpen && cameraActive) {
-      try {
-        qrScanner = new Html5QrcodeScanner(
-          'qr-reader',
-          { fps: 10, qrbox: { width: 250, height: 250 } },
-          false
-        )
-        qrScanner.render(
-          (decodedText) => {
-            handleScannedCode(decodedText)
-            if (qrScanner) {
-              qrScanner.clear().catch(() => {})
-            }
-            setCameraActive(false)
-            setScannerOpen(false)
-          },
-          (error) => {
-            // أخطاء المسح المؤقتة أثناء توجيه الكاميرا يتم تجاهلها
-          }
-        )
-      } catch (e) {
-        console.error('Camera init error:', e)
-      }
-    }
+    let qrInstance = null
 
-    return () => {
-      if (qrScanner) {
-        qrScanner.clear().catch(() => {})
+    if (scannerOpen) {
+      // إعطاء فرصة لعنصر الـ DOM للظهور قبل تشغيل الكاميرا
+      const timer = setTimeout(() => {
+        qrInstance = new Html5Qrcode('qr-reader-container')
+        html5QrCodeRef.current = qrInstance
+
+        qrInstance
+          .start(
+            { facingMode: 'environment' }, // طلب الكاميرا الخلفية مباشرة
+            {
+              fps: 15,
+              qrbox: { width: 250, height: 250 },
+            },
+            (decodedText) => {
+              handleScannedCode(decodedText)
+            },
+            () => {}
+          )
+          .catch((err) => {
+            console.error('Camera error:', err)
+            toast('تعذر فتح الكاميرا. تأكد من إعطاء الصلاحيات للمتصفح.', 'error')
+          })
+      }, 300)
+
+      return () => {
+        clearTimeout(timer)
+        if (qrInstance && qrInstance.isScanning) {
+          qrInstance.stop().catch(() => {})
+        }
       }
     }
-  }, [scannerOpen, cameraActive, students])
+  }, [scannerOpen, students])
+
+  const stopCamera = async () => {
+    if (html5QrCodeRef.current && html5QrCodeRef.current.isScanning) {
+      try {
+        await html5QrCodeRef.current.stop()
+        await html5QrCodeRef.current.clear()
+      } catch (e) {
+        console.error('Stop error:', e)
+      }
+    }
+  }
 
   const handleScannedCode = (code) => {
     const cleanCode = code.trim().toLowerCase()
@@ -164,8 +176,6 @@ export default function SessionsPage() {
     }
     handleScannedCode(manualCode)
     setManualCode('')
-    setScannerOpen(false)
-    setCameraActive(false)
   }
 
   const filteredStudents = useMemo(() => {
@@ -192,16 +202,13 @@ export default function SessionsPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-extrabold text-slate-800">إدارة الحضور بـ QR Code</h1>
-          <p className="mt-1 text-sm text-slate-500">امسح الكود بالكاميرا أو اضغط لتسجيل حضور حصة اليوم ({todayStr})</p>
+          <p className="mt-1 text-sm text-slate-500">امسح الكود بالكاميرا الخلفية لتسجيل حضور حصة اليوم ({todayStr})</p>
         </div>
         <button
-          onClick={() => {
-            setScannerOpen(true)
-            setCameraActive(true)
-          }}
+          onClick={() => setScannerOpen(true)}
           className="btn-primary w-full sm:w-auto justify-center"
         >
-          <Camera className="h-5 w-5" /> فتح قارئ الباركود (الكاميرا)
+          <Camera className="h-5 w-5" /> فتح الكاميرا للمسح الفوري
         </button>
       </div>
 
@@ -305,63 +312,48 @@ export default function SessionsPage() {
         </div>
       )}
 
-      {/* Camera & Manual Scanner Modal */}
+      {/* Camera Scanner Modal */}
       <Modal
         open={scannerOpen}
-        onClose={() => {
+        onClose={async () => {
+          await stopCamera()
           setScannerOpen(false)
-          setCameraActive(false)
         }}
-        title="قارئ كود الـ QR والباركود"
+        title="ماسح الـ QR والباركود (الكاميرا الخلفية)"
         footer={
-          <>
-            <button
-              onClick={() => {
-                setScannerOpen(false)
-                setCameraActive(false)
-              }}
-              className="btn-outline"
-            >
-              إغلاق
-            </button>
-            <button onClick={handleManualScan} className="btn-primary">
-              تسجيل الكود يدوياً
-            </button>
-          </>
+          <button
+            onClick={async () => {
+              await stopCamera()
+              setScannerOpen(false)
+            }}
+            className="btn-outline w-full"
+          >
+            إغلاق الماسح
+          </button>
         }
       >
         <div className="space-y-4">
-          {cameraActive ? (
-            <div className="relative overflow-hidden rounded-2xl bg-black p-2">
-              <div id="qr-reader" className="w-full"></div>
-              <button
-                onClick={() => setCameraActive(false)}
-                className="mt-2 w-full flex items-center justify-center gap-2 rounded-xl bg-rose-600 py-2 text-xs font-bold text-white"
-              >
-                <StopCircle className="h-4 w-4" /> إيقاف الكاميرا
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => setCameraActive(true)}
-              className="w-full flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-primary-300 bg-primary-50 py-6 text-sm font-bold text-primary-700 transition hover:bg-primary-100"
-            >
-              <Camera className="h-6 w-6" /> اضغط هنا لتشغيل الكاميرا للمسح
-            </button>
-          )}
+          <div className="relative overflow-hidden rounded-2xl bg-black p-2">
+            <div id="qr-reader-container" className="w-full min-h-[280px]"></div>
+          </div>
 
           <div>
-            <label className="label">أو أدخل كود الطالب يدوياً / جهاز الباركود</label>
-            <input
-              className="input font-mono text-center text-lg uppercase"
-              dir="ltr"
-              value={manualCode}
-              onChange={(e) => setManualCode(e.target.value)}
-              placeholder="std-xxxxxx"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleManualScan()
-              }}
-            />
+            <label className="label">أو أدخل الكود يدوياً / عبر الباركود الخارجي</label>
+            <div className="flex gap-2">
+              <input
+                className="input font-mono text-center text-lg uppercase flex-1"
+                dir="ltr"
+                value={manualCode}
+                onChange={(e) => setManualCode(e.target.value)}
+                placeholder="std-xxxxxx"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleManualScan()
+                }}
+              />
+              <button onClick={handleManualScan} className="btn-primary">
+                بحث وتسجيل
+              </button>
+            </div>
           </div>
         </div>
       </Modal>
