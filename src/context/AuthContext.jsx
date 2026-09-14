@@ -22,14 +22,14 @@ export function AuthProvider({ children }) {
   }, [])
 
   useEffect(() => {
-    if (!user) {
+    if (!user || !user.email) {
       setProfile(null)
       return
     }
     supabase
       .from('teachers')
       .select('id, role, full_name, email')
-      .eq('id', user.id)
+      .eq('email', user.email)
       .maybeSingle()
       .then(({ data }) => setProfile(data))
   }, [user])
