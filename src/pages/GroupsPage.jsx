@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Plus, Pencil, Trash2, Users, Layers, FileSpreadsheet, Printer, ClipboardList } from 'lucide-react'
+import { Plus, Pencil, Trash2, Users, Layers, FileSpreadsheet, Printer, ClipboardList, MapPin, Globe } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../components/ui/Toast'
@@ -20,6 +20,7 @@ export default function GroupsPage() {
   const [editing, setEditing] = useState(null)
   const [name, setName] = useState('')
   const [color, setColor] = useState(GROUP_COLORS[0].value)
+  const [groupType, setGroupType] = useState('center') // center أو online
   const [saving, setSaving] = useState(false)
   const [printOpen, setPrintOpen] = useState(false)
   const [studentsForPrint, setStudentsForPrint] = useState([])
@@ -53,6 +54,7 @@ export default function GroupsPage() {
     setEditing(null)
     setName('')
     setColor(GROUP_COLORS[0].value)
+    setGroupType('center')
     setModalOpen(true)
   }
 
@@ -60,6 +62,7 @@ export default function GroupsPage() {
     setEditing(g)
     setName(g.group_name)
     setColor(g.color_code)
+    setGroupType(g.type || 'center')
     setModalOpen(true)
   }
 
@@ -72,7 +75,7 @@ export default function GroupsPage() {
     if (editing) {
       const { error } = await supabase
         .from('groups')
-        .update({ group_name: name.trim(), color_code: color })
+        .update({ group_name: name.trim(), color_code: color, type: groupType })
         .eq('id', editing.id)
         .eq('teacher_id', teacherId)
       if (error) toast('تعذر تعديل المجموعة', 'error')
@@ -80,7 +83,7 @@ export default function GroupsPage() {
     } else {
       const { error } = await supabase
         .from('groups')
-        .insert({ teacher_id: teacherId, group_name: name.trim(), color_code: color })
+        .insert({ teacher_id: teacherId, group_name: name.trim(), color_code: color, type: groupType })
       if (error) toast('تعذر إنشاء المجموعة', 'error')
       else toast('تم إنشاء المجموعة')
     }
@@ -101,10 +104,11 @@ export default function GroupsPage() {
     load()
   }
 
-  const exportExcel = () => {    const rows = groups.map((g, i) => [i + 1, g.group_name, studentCounts[g.id] || 0, g.color_code])
+  const exportExcel = () => {
+    const rows = groups.map((g, i) => [i + 1, g.group_name, g.type === 'online' ? 'أونلاين' : 'سنتر', studentCounts[g.id] || 0, g.color_code])
     downloadCSV({
       filename: `كشف-المجاميع-${new Date().toISOString().slice(0, 10)}`,
-      headers: ['م', 'اسم المجموعة', 'عدد الطلاب', 'اللون'],
+      headers: ['م', 'اسم المجموعة', 'النوع', 'عدد الطلاب', 'اللون'],
       rows,
     })
     toast('تم تصدير كشف المجاميع')
@@ -120,8 +124,8 @@ export default function GroupsPage() {
     setPrintOpen(true)
   }
 
-  const printColumns = ['م', 'اسم المجموعة', 'عدد الطلاب', 'التوقيع']
-  const printRows = groups.map((g, i) => [i + 1, g.group_name, studentCounts[g.id] || 0, ''])
+  const printColumns = ['م', 'اسم المجموعة', 'النوع', 'عدد الطلاب', 'التوقيع']
+  const printRows = groups.map((g, i) => [i + 1, g.group_name, g.type === 'online' ? 'أونلاين' : 'سنتر', studentCounts[g.id] || 0, ''])
 
   if (loading) {
     return (
@@ -136,7 +140,7 @@ export default function GroupsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-extrabold text-slate-800">المجاميع</h1>
-          <p className="mt-1 text-sm text-slate-500">أنشئ مجاميعك وحدّد لوناً مميزاً لكل مجموعة</p>
+          <p className="mt-1 text-sm text-slate-500">أنشئ مجاميعك وحدّد لوناً ونوعاً لكل مجموعة</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button onClick={exportExcel} className="btn-outline">
@@ -181,8 +185,16 @@ export default function GroupsPage() {
                       {g.group_name.charAt(0)}
                     </span>
                     <div>
-                      <h3 className="font-extrabold text-slate-800">{g.group_name}</h3>
-                      <p className="flex items-center gap-1 text-xs font-semibold text-slate-400">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-extrabold text-slate-800">{g.group_name}</h3>
+                        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                          g.type === 'online' ? 'bg-indigo-50 text-indigo-600' : 'bg-emerald-50 text-emerald-600'
+                        }`}>
+                          {g.type === 'online' ? <Globe className="h-3 w-3" /> : <MapPin className="h-3 w-3" />}
+                          {g.type === 'online' ? 'أونلاين' : 'سنتر'}
+                        </span>
+                      </div>
+                      <p className="flex items-center gap-1 text-xs font-semibold text-slate-400 mt-1">
                         <Users className="h-3.5 w-3.5" />
                         {studentCounts[g.id] || 0} طالب
                       </p>
@@ -241,6 +253,35 @@ export default function GroupsPage() {
               placeholder="مثال: المجموعة الأولى"
               autoFocus
             />
+          </div>
+          <div>
+            <label className="label">نوع المجموعة</label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setGroupType('center')}
+                className={`flex items-center justify-center gap-2 rounded-xl border-2 p-3 text-sm font-bold transition ${
+                  groupType === 'center'
+                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <MapPin className="h-4 w-4" />
+                سنتر
+              </button>
+              <button
+                type="button"
+                onClick={() => setGroupType('online')}
+                className={`flex items-center justify-center gap-2 rounded-xl border-2 p-3 text-sm font-bold transition ${
+                  groupType === 'online'
+                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <Globe className="h-4 w-4" />
+                أونلاين
+              </button>
+            </div>
           </div>
           <div>
             <label className="label">لون المجموعة</label>
