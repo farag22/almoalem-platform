@@ -19,12 +19,11 @@ export default function GroupsPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState(null)
   
-  // الحقول الجديدة للمجموعة
   const [name, setName] = useState('')
   const [days, setDays] = useState('')
   const [time, setTime] = useState('')
-  const [groupType, setGroupType] = useState('center') // center or online
-  const [subscriptionType, setSubscriptionType] = useState('monthly') // monthly or per_session
+  const [groupType, setGroupType] = useState('center')
+  const [subscriptionType, setSubscriptionType] = useState('monthly')
   const [sessionsPerMonth, setSessionsPerMonth] = useState(8)
   const [color, setColor] = useState(GROUP_COLORS[0].value)
 
@@ -292,53 +291,53 @@ export default function GroupsPage() {
             />
           </div>
 
-          <div>
-            <label className="label">أيام الحصة في الأسبوع</label>
-            <input
-              className="input"
-              value={days}
-              onChange={(e) => setDays(e.target.value)}
-              placeholder="مثال: السبت والأربعاء"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="label">أيام الحصة في الأسبوع</label>
+              <input
+                className="input"
+                value={days}
+                onChange={(e) => setDays(e.target.value)}
+                placeholder="مثال: السبت والأربعاء"
+              />
+            </div>
+
+            <div>
+              <label className="label">وقت بدء الحصة</label>
+              <input
+                type="time"
+                className="input text-center font-bold"
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
+              />
+            </div>
           </div>
 
-          <div>
-            <label className="label">وقت بدء الحصة</label>
-            <input
-              className="input"
-              value={time}
-              onChange={(e) => setTime(e.target.value)}
-              placeholder="مثال: 04:00 مساءً"
-            />
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 p-4 space-y-4 bg-slate-50/50">
+          <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 space-y-4 shadow-sm">
             <div>
               <label className="label font-bold text-slate-700">نمط التعليم</label>
               <div className="grid grid-cols-2 gap-3 mt-1">
                 <button
                   type="button"
-                  onClick={() => setGroupType('online')}
-                  className={`flex items-center justify-center gap-2 rounded-xl border-2 p-2.5 text-sm font-bold transition ${
-                    groupType === 'online'
-                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
-                      : 'border-slate-200 bg-white text-slate-600'
+                  onClick={() => setGroupType('center')}
+                  className={`flex items-center justify-center gap-2 rounded-xl border-2 p-3 text-sm font-bold transition ${
+                    groupType === 'center'
+                      ? 'border-primary-600 bg-primary-600 text-white shadow-sm'
+                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
                   }`}
                 >
-                  <Globe className="h-4 w-4" />
-                  أونلاين 💻
+                  🏫 سنتر
                 </button>
                 <button
                   type="button"
-                  onClick={() => setGroupType('center')}
-                  className={`flex items-center justify-center gap-2 rounded-xl border-2 p-2.5 text-sm font-bold transition ${
-                    groupType === 'center'
-                      ? 'border-primary-500 bg-primary-50 text-primary-700'
-                      : 'border-slate-200 bg-white text-slate-600'
+                  onClick={() => setGroupType('online')}
+                  className={`flex items-center justify-center gap-2 rounded-xl border-2 p-3 text-sm font-bold transition ${
+                    groupType === 'online'
+                      ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
+                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
                   }`}
                 >
-                  <MapPin className="h-4 w-4" />
-                  سنتر 🏫
+                  💻 أونلاين
                 </button>
               </div>
             </div>
@@ -348,25 +347,25 @@ export default function GroupsPage() {
               <div className="grid grid-cols-2 gap-3 mt-1">
                 <button
                   type="button"
-                  onClick={() => setSubscriptionType('per_session')}
-                  className={`flex items-center justify-center gap-2 rounded-xl border-2 p-2.5 text-sm font-bold transition ${
-                    subscriptionType === 'per_session'
-                      ? 'border-pink-500 bg-pink-50 text-pink-700'
-                      : 'border-slate-200 bg-white text-slate-600'
-                  }`}
-                >
-                  🎟️ بالحصة
-                </button>
-                <button
-                  type="button"
                   onClick={() => setSubscriptionType('monthly')}
-                  className={`flex items-center justify-center gap-2 rounded-xl border-2 p-2.5 text-sm font-bold transition ${
+                  className={`flex items-center justify-center gap-2 rounded-xl border-2 p-3 text-sm font-bold transition ${
                     subscriptionType === 'monthly'
-                      ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                      : 'border-slate-200 bg-white text-slate-600'
+                      ? 'border-emerald-600 bg-emerald-600 text-white shadow-sm'
+                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
                   }`}
                 >
                   📅 شهري
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSubscriptionType('per_session')}
+                  className={`flex items-center justify-center gap-2 rounded-xl border-2 p-3 text-sm font-bold transition ${
+                    subscriptionType === 'per_session'
+                      ? 'border-pink-600 bg-pink-600 text-white shadow-sm'
+                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  🎟️ بالحصة
                 </button>
               </div>
             </div>
@@ -376,7 +375,7 @@ export default function GroupsPage() {
                 <label className="label">عدد حصص الشهر</label>
                 <input
                   type="number"
-                  className="input text-center font-bold"
+                  className="input text-center font-extrabold text-lg"
                   value={sessionsPerMonth}
                   onChange={(e) => setSessionsPerMonth(e.target.value)}
                   min={1}
