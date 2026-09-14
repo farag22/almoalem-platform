@@ -10,6 +10,8 @@ import QuickGradingModal from '../components/QuickGradingModal'
 import { GROUP_COLORS } from '../lib/constants'
 import { downloadCSV } from '../lib/export'
 
+const DAYS_OF_WEEK = ['السبت', 'الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة']
+
 export default function GroupsPage() {
   const toast = useToast()
   const { teacherId, profile } = useAuth()
@@ -20,7 +22,7 @@ export default function GroupsPage() {
   const [editing, setEditing] = useState(null)
   
   const [name, setName] = useState('')
-  const [days, setDays] = useState('')
+  const [selectedDays, setSelectedDays] = useState([])
   const [time, setTime] = useState('')
   const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [groupType, setGroupType] = useState('center')
@@ -57,10 +59,16 @@ export default function GroupsPage() {
     load()
   }, [])
 
+  const toggleDay = (day) => {
+    setSelectedDays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+    )
+  }
+
   const openCreate = () => {
     setEditing(null)
     setName('')
-    setDays('')
+    setSelectedDays([])
     setTime('')
     setStartDate(new Date().toISOString().slice(0, 10))
     setGroupType('center')
@@ -73,7 +81,7 @@ export default function GroupsPage() {
   const openEdit = (g) => {
     setEditing(g)
     setName(g.group_name || '')
-    setDays(g.days || '')
+    setSelectedDays(g.days ? g.days.split(', ').filter(Boolean) : [])
     setTime(g.time || '')
     setStartDate(g.start_date || new Date().toISOString().slice(0, 10))
     setGroupType(g.type || 'center')
@@ -92,7 +100,7 @@ export default function GroupsPage() {
     const payload = {
       teacher_id: teacherId,
       group_name: name.trim(),
-      days: days.trim(),
+      days: selectedDays.join(', '),
       time: time.trim(),
       start_date: startDate,
       type: groupType,
@@ -173,7 +181,7 @@ export default function GroupsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-12">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-extrabold text-slate-800">المجاميع</h1>
@@ -251,12 +259,14 @@ export default function GroupsPage() {
                     <button
                       onClick={() => openEdit(g)}
                       className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-primary-600"
+                      title="تعديل المجموعة"
                     >
                       <Pencil className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => remove(g)}
                       className="rounded-lg p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
+                      title="حذف المجموعة"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -297,13 +307,26 @@ export default function GroupsPage() {
           </div>
 
           <div>
-            <label className="label">أيام الحصة في الأسبوع</label>
-            <input
-              className="input"
-              value={days}
-              onChange={(e) => setDays(e.target.value)}
-              placeholder="مثال: السبت والأربعاء"
-            />
+            <label className="label">أيام الحصة في الأسبوع (اضغط لتحديد أو إلغاء الأيام)</label>
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 mt-1">
+              {DAYS_OF_WEEK.map((day) => {
+                const isSelected = selectedDays.includes(day)
+                return (
+                  <button
+                    key={day}
+                    type="button"
+                    onClick={() => toggleDay(day)}
+                    className={`rounded-xl border p-2.5 text-xs font-bold transition ${
+                      isSelected
+                        ? 'border-primary-600 bg-primary-600 text-white shadow-sm'
+                        : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    {day}
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
