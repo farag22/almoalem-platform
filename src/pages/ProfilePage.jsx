@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { User, Camera, Save } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../components/ui/Toast'
@@ -7,6 +8,7 @@ import { useToast } from '../components/ui/Toast'
 export default function ProfilePage() {
   const { profile, teacherId, refreshProfile } = useAuth()
   const toast = useToast()
+  const navigate = useNavigate()
   
   const [fullName, setFullName] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
@@ -14,7 +16,7 @@ export default function ProfilePage() {
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
 
-  // تحديث الحقول فور وصول بيانات الـ profile
+  // جلب البيانات الحالية وتعبئتها في الحقول أول ما الصفحة تفتح أو يتغير الـ profile
   useEffect(() => {
     if (profile) {
       setFullName(profile.full_name || '')
@@ -46,12 +48,13 @@ export default function ProfilePage() {
       toast('تم رفع الصورة بنجاح')
     } catch (error) {
       console.error(error)
-      toast('حدث خطأ أثناء رفع الصورة، تأكد من إنشاء Bucket باسم avatars', 'error')
+      toast('حدث خطأ أثناء رفع الصورة، تأكد من إعدادات الـ Bucket', 'error')
     } finally {
       setUploading(false)
     }
   }
 
+  // حفظ التعديلات
   const handleSave = async (e) => {
     e.preventDefault()
     const currentId = teacherId || profile?.id
@@ -74,9 +77,17 @@ export default function ProfilePage() {
       if (error) throw error
 
       toast('تم تحديث الملف الشخصي بنجاح')
+      
+      // تحديث البيانات في الـ Context إن وجد الدالة
       if (refreshProfile) {
         await refreshProfile()
       }
+
+      // الانتقال للوحة الرئيسية بعد ثانية لترى اسمك وصورتك الجديدة في القائمة الجانبية
+      setTimeout(() => {
+        navigate('/dashboard')
+      }, 1000)
+
     } catch (error) {
       console.error(error)
       toast('تعذر حفظ البيانات', 'error')
