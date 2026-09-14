@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import { useToast } from '../components/ui/Toast'
 
 export default function ProfilePage() {
-  const { profile, teacherId, refreshProfile } = useAuth()
+  const { profile, teacherId, user, refreshProfile } = useAuth()
   const toast = useToast()
   const navigate = useNavigate()
   
@@ -16,14 +16,38 @@ export default function ProfilePage() {
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
 
-  // جلب البيانات الحالية وتعبئتها في الحقول أول ما الصفحة تفتح أو يتغير الـ profile
+  // جلب البيانات من الجدول مباشرة فور فتح الصفحة لضمان ملء الحقول والإيميل
   useEffect(() => {
-    if (profile) {
-      setFullName(profile.full_name || '')
-      setAvatarUrl(profile.avatar_url || '')
-      setEmail(profile.email || '')
+    async function loadTeacherProfile() {
+      const targetId = teacherId || profile?.id
+      const targetEmail = user?.email || profile?.email
+
+      if (!targetId && !targetEmail) return
+
+      let query = supabase.from('teachers').select('*')
+      if (targetId) {
+        query = query.eq('id', targetId)
+      } else if (targetEmail) {
+        query = query.eq('email', targetEmail)
+      }
+
+      const { data } = await query.maybeSingle()
+
+      if (data) {
+        setFullName(data.full_name || '')
+        setAvatarUrl(data.avatar_url || '')
+        setEmail(data.email || targetEmail || '')
+      } else if (profile) {
+        setFullName(profile.full_name || '')
+        setAvatarUrl(profile.avatar_url || '')
+        setEmail(profile.email || targetEmail || '')
+      } else if (targetEmail) {
+        setEmail(targetEmail)
+      }
     }
-  }, [profile])
+
+    loadTeacherProfile()
+  }, [profile, teacherId, user])
 
   // رفع الصورة الشخصية إلى Supabase Storage
   const handleImageUpload = async (e) => {
@@ -33,7 +57,7 @@ export default function ProfilePage() {
       if (!file) return
 
       const fileExt = file.name.split('.').pop()
-      const currentId = teacherId || profile?.id
+      const currentId = teacherId || profile?.id || 'teacher'
       const fileName = `${currentId}-${Date.now()}.${fileExt}`
       const filePath = `${fileName}`
 
@@ -58,32 +82,36 @@ export default function ProfilePage() {
   const handleSave = async (e) => {
     e.preventDefault()
     const currentId = teacherId || profile?.id
+    const targetEmail = email || user?.email || profile?.email
 
-    if (!currentId) {
-      toast('معرف المعلم غير موجود، يرجى إعادة تسجيل الدخول', 'error')
+    if (!currentId && !targetEmail) {
+      toast('بيانات المعلم غير متوفرة، يرجى إعادة تسجيل الدخول', 'error')
       return
     }
 
     setSaving(true)
     try {
-      const { error } = await supabase
-        .from('teachers')
-        .update({ 
-          full_name: fullName, 
-          avatar_url: avatarUrl 
-        })
-        .eq('id', currentId)
+      let query = supabase.from('teachers').update({ 
+        full_name: fullName, 
+        avatar_url: avatarUrl 
+      })
+
+      if (currentId) {
+        query = query.eq('id', currentId)
+      } else {
+        query = query.eq('email', targetEmail)
+      }
+
+      const { error } = await query
 
       if (error) throw error
 
       toast('تم تحديث الملف الشخصي بنجاح')
       
-      // تحديث البيانات في الـ Context إن وجد الدالة
       if (refreshProfile) {
         await refreshProfile()
       }
 
-      // الانتقال للوحة الرئيسية بعد ثانية لترى اسمك وصورتك الجديدة في القائمة الجانبية
       setTimeout(() => {
         navigate('/dashboard')
       }, 1000)
