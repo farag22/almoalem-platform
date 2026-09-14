@@ -143,12 +143,13 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+          {/* زر الماسح بلون مميز وجذاب */}
           <Link
             to="/dashboard/sessions"
-            className="flex items-center justify-center gap-1.5 rounded-xl border border-white/30 bg-white/25 px-4 py-2.5 text-xs sm:text-sm font-extrabold text-white backdrop-blur-md transition-all hover:bg-white/35 active:scale-95 shadow-sm"
+            className="col-span-2 flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 text-sm font-extrabold text-white shadow-md transition-all hover:bg-emerald-600 active:scale-95"
           >
-            <QrCode className="h-4 w-4 shrink-0" />
-            <span>ماسح Qr</span>
+            <QrCode className="h-5 w-5 shrink-0" />
+            <span>ماسح Qr السريع</span>
           </Link>
           <Link
             to="/dashboard/attendance"
@@ -167,7 +168,7 @@ export default function Dashboard() {
             target="_blank"
             rel="noopener noreferrer"
             download
-            className="flex items-center justify-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-xs sm:text-sm font-bold text-white backdrop-blur-sm transition-all hover:bg-white/20 active:scale-95"
+            className="col-span-2 flex items-center justify-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-xs sm:text-sm font-bold text-white backdrop-blur-sm transition-all hover:bg-white/20 active:scale-95"
           >
             <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
@@ -182,23 +183,23 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      {/* Stat cards - محسنة لتكون في عمودين لتقليل التمرير */}
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         {cards.map((c) => (
           <Link
             key={c.title}
             to={c.to}
-            className="card flex items-center gap-4 p-5 transition hover:shadow-md"
+            className="card flex flex-col sm:flex-row items-start sm:items-center gap-3 p-4 transition hover:shadow-md"
           >
             <div
-              className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${c.color}`}
+              className={`flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-2xl ${c.color}`}
             >
-              <c.icon className="h-6 w-6" />
+              <c.icon className="h-5 w-5 sm:h-6 sm:w-6" />
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-semibold text-slate-500">{c.title}</p>
-              <p className="text-2xl font-extrabold text-slate-800">{c.value}</p>
-              {c.sub && <p className="text-xs font-medium text-slate-400">{c.sub}</p>}
+              <p className="text-[11px] sm:text-xs font-semibold text-slate-500">{c.title}</p>
+              <p className="text-xl sm:text-2xl font-extrabold text-slate-800">{c.value}</p>
+              {c.sub && <p className="text-[10px] sm:text-xs font-medium text-slate-400">{c.sub}</p>}
             </div>
           </Link>
         ))}
@@ -258,28 +259,28 @@ export default function Dashboard() {
             </Link>
           </div>
           {groups.length ? (
-            <ul className="space-y-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {groups.map((g) => (
-                <li
+                <div
                   key={g.id}
-                  className="flex items-center justify-between rounded-xl border border-slate-100 px-4 py-3"
+                  className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/50 px-3 py-2.5"
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2.5">
                     <span
-                      className="h-3 w-3 rounded-full"
+                      className="h-3 w-3 rounded-full shrink-0"
                       style={{ backgroundColor: g.color_code }}
                     />
-                    <span className="font-bold text-slate-700">{g.group_name}</span>
+                    <span className="font-bold text-slate-700 text-sm truncate max-w-[110px]">{g.group_name}</span>
                   </div>
                   <Link
                     to="/dashboard/students"
-                    className="text-xs font-bold text-primary-600 hover:underline"
+                    className="text-[11px] font-bold text-primary-600 hover:underline shrink-0"
                   >
-                    عرض الطلاب
+                    الطلاب
                   </Link>
-                </li>
+                </div>
               ))}
-            </ul>
+            </div>
           ) : (
             <Link
               to="/dashboard/groups"
