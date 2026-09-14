@@ -8,9 +8,10 @@ import GroupsPage from './pages/GroupsPage'
 import StudentsPage from './pages/StudentsPage'
 import AttendancePage from './pages/AttendancePage'
 import PaymentsPage from './pages/PaymentsPage'
-import SessionsPage from './pages/SessionsPage' // استيراد صفحة الحصص والمواعيد الجديدة
+import SessionsPage from './pages/SessionsPage'
 import AdminDashboard from './pages/AdminDashboard'
 import LandingPage from './pages/LandingPage'
+import ProfilePage from './pages/ProfilePage' // استيراد صفحة الملف الشخصي
 
 export function Spinner({ size = 'h-8 w-8' }) {
   return (
@@ -116,7 +117,8 @@ function AppRoutes() {
         <Route path="students" element={<StudentsPage />} />
         <Route path="attendance" element={<AttendancePage />} />
         <Route path="payments" element={<PaymentsPage />} />
-        <Route path="sessions" element={<SessionsPage />} /> {/* مسار صفحة الحصص والمواعيد الجديد */}
+        <Route path="sessions" element={<SessionsPage />} />
+        <Route path="profile" element={<ProfilePage />} /> {/* مسار صفحة الملف الشخصي */}
       </Route>
       <Route
         path="/"
