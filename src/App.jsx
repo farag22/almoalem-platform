@@ -8,6 +8,7 @@ import GroupsPage from './pages/GroupsPage'
 import StudentsPage from './pages/StudentsPage'
 import AttendancePage from './pages/AttendancePage'
 import PaymentsPage from './pages/PaymentsPage'
+import SessionsPage from './pages/SessionsPage' // استيراد صفحة الحصص والمواعيد الجديدة
 import AdminDashboard from './pages/AdminDashboard'
 import LandingPage from './pages/LandingPage'
 
@@ -115,6 +116,7 @@ function AppRoutes() {
         <Route path="students" element={<StudentsPage />} />
         <Route path="attendance" element={<AttendancePage />} />
         <Route path="payments" element={<PaymentsPage />} />
+        <Route path="sessions" element={<SessionsPage />} /> {/* مسار صفحة الحصص والمواعيد الجديد */}
       </Route>
       <Route
         path="/"
@@ -142,4 +144,4 @@ export default function App() {
       <AppRoutes />
     </AuthProvider>
   )
-            }
+}
