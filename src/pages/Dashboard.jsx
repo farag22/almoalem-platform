@@ -10,6 +10,7 @@ import {
   UserCheck,
   UserX,
   Clock,
+  QrCode,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -153,6 +154,13 @@ export default function Dashboard() {
             className="rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-primary-700 hover:bg-indigo-50 transition-all active:scale-95"
           >
             إضافة طالب
+          </Link>
+          <Link
+            to="/dashboard/sessions"
+            className="flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/20 px-4 py-2.5 text-sm font-bold text-white backdrop-blur-sm transition-all hover:bg-white/30 active:scale-95"
+          >
+            <QrCode className="h-4 w-4" />
+            <span>ماسح Qr</span>
           </Link>
           <a
             href="https://apk.e-droid.net/apk/app4153335-qeh2f5.apk?v=1"
