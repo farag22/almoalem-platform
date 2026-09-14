@@ -18,14 +18,20 @@ import { useAuth } from '../../context/AuthContext'
 import { ToastProvider } from '../ui/Toast'
 import { Spinner } from '../../App'
 
-const NAV = [
+// الروابط التي تظهر في الشريط السفلي للهواتف (بدون الملف الشخصي)
+const MOBILE_NAV = [
   { to: '/dashboard', label: 'الرئيسية', icon: LayoutDashboard, end: true },
   { to: '/dashboard/groups', label: 'المجاميع', icon: Layers },
   { to: '/dashboard/students', label: 'الطلاب', icon: Users },
   { to: '/dashboard/attendance', label: 'الحضور', icon: CalendarCheck },
   { to: '/dashboard/payments', label: 'المصاريف', icon: Wallet },
   { to: '/dashboard/sessions', label: 'ماسح Qr', icon: Calendar },
-  { to: '/dashboard/profile', label: 'الملف الشخصي', icon: User }, // زر الملف الشخصي المضاف
+]
+
+// الروابط التي تظهر في القائمة الجانبية (متضمنة الملف الشخصي)
+const SIDEBAR_NAV = [
+  ...MOBILE_NAV,
+  { to: '/dashboard/profile', label: 'الملف الشخصي', icon: User },
 ]
 
 function SidebarContent({ onNavigate }) {
@@ -46,7 +52,7 @@ function SidebarContent({ onNavigate }) {
       </div>
 
       <nav className="mt-2 flex-1 space-y-1 px-3">
-        {NAV.map((item) => (
+        {SIDEBAR_NAV.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
@@ -145,7 +151,7 @@ export default function DashboardLayout() {
 
         {/* Sidebar mobile drawer */}
         {mobileOpen && (
-          <div className="flex min-h-screen inset-0 z-50 lg:hidden">
+          <div className="fixed inset-0 z-50 lg:hidden">
             <div className="absolute inset-0 bg-slate-900/60" onClick={() => setMobileOpen(false)} />
             <aside className="absolute inset-y-0 right-0 w-72">
               <div className="relative h-full bg-gradient-to-b from-primary-700 to-primary-900 shadow-2xl">
@@ -196,7 +202,7 @@ export default function DashboardLayout() {
 
         {/* Bottom Navigation Bar for Mobile */}
         <nav className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-around border-t border-slate-200 bg-white/95 px-2 py-2 shadow-lg backdrop-blur lg:hidden">
-          {NAV.map((item) => (
+          {MOBILE_NAV.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
