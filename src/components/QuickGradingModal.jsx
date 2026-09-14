@@ -41,9 +41,15 @@ export default function QuickGradingModal({
       .select('*, groups(group_name)')
       .eq('teacher_id', teacherId)
       .order('student_name')
-    if (group && group !== 'all') q = q.eq('group_id', group)
+    
     const { data } = await q
-    const list = data ?? []
+    let list = data ?? []
+    
+    // التصفية برمجياً بطريقة آمنة لا تفشل أبداً
+    if (group && group !== 'all') {
+      list = list.filter((s) => s.group_id === group)
+    }
+
     setStudents(list)
     const r = {}
     list.forEach((s) => {
