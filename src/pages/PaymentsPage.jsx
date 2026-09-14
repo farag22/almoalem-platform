@@ -89,6 +89,23 @@ export default function PaymentsPage() {
 
   const groupById = (id) => groups.find((g) => g.id === id)
 
+  const getGroupPrice = (group) => {
+    if (!group) return 0
+    if (group.subscription_type === 'monthly') {
+      return Number(group.monthly_price || 0)
+    }
+    return Number(group.session_price || 0)
+  }
+
+  const studentStats = (s) => {
+    const grp = groupById(s.group_id)
+    const expectedTotal = getGroupPrice(grp)
+    const ps = payments.filter((p) => p.student_id === s.id)
+    const paid = ps.reduce((x, p) => x + (p.notes === 'تم الدفع' ? Number(p.amount || 0) : 0), 0)
+    const remaining = Math.max(0, expectedTotal - paid)
+    return { total: expectedTotal, paid, remaining }
+  }
+
   const filteredStudents = useMemo(() => {
     return students.filter((s) => {
       const matchGroup = groupFilter === 'all' || s.group_id === groupFilter
@@ -104,20 +121,13 @@ export default function PaymentsPage() {
   const summary = useMemo(() => {
     let total = 0
     let collected = 0
-    payments.forEach((p) => {
-      total += Number(p.amount || 0)
-      // الاعتماد على الملاحظات أو الحالة إذا وجدت، وإلا الاحتساب حسب القيمة
-      if (p.notes === 'تم الدفع' || Number(p.amount || 0) > 0) collected += Number(p.amount || 0)
+    students.forEach((s) => {
+      const st = studentStats(s)
+      total += st.total
+      collected += st.paid
     })
     return { total, collected, remaining: Math.max(0, total - collected) }
-  }, [payments])
-
-  const studentStats = (s) => {
-    const ps = paymentsFor(s.id)
-    const total = ps.reduce((x, p) => x + Number(p.amount || 0), 0)
-    const paid = ps.reduce((x, p) => x + (p.notes === 'تم الدفع' ? Number(p.amount || 0) : 0), 0)
-    return { total, paid, remaining: Math.max(0, total - paid) }
-  }
+  }, [students, groups, payments])
 
   const exportExcel = () => {
     const rows = filteredStudents.map((s, i) => {
@@ -130,7 +140,7 @@ export default function PaymentsPage() {
         fmtMoney(st.total),
         fmtMoney(st.paid),
         fmtMoney(st.remaining),
-        st.remaining > 0 ? 'متبقي' : 'مدفوع',
+        st.remaining === 0 ? 'مدفوع بالكامل' : st.paid > 0 ? 'دفع جزئي' : 'غير مدفوع',
       ]
     })
     downloadCSV({
@@ -153,7 +163,7 @@ export default function PaymentsPage() {
       `${fmtMoney(st.total)} ج.م`,
       `${fmtMoney(st.paid)} ج.م`,
       `${fmtMoney(st.remaining)} ج.م`,
-      st.remaining > 0 ? 'متبقي' : 'مدفوع',
+      st.remaining === 0 ? 'مدفوع بالكامل' : st.paid > 0 ? 'دفع جزئي' : 'غير مدفوع',
     ]
   })
 
@@ -173,7 +183,8 @@ export default function PaymentsPage() {
 
   const openPay = (student) => {
     setPayingStudent(student)
-    setPayAmount('')
+    const st = studentStats(student)
+    setPayAmount(st.remaining > 0 ? String(st.remaining) : '')
     setPayModalOpen(true)
   }
 
@@ -360,16 +371,13 @@ export default function PaymentsPage() {
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
           {filteredStudents.map((s) => {
             const grp = groupById(s.group_id)
-            const ps = paymentsFor(s.id)
-            const total = ps.reduce((x, p) => x + Number(p.amount || 0), 0)
-            const paidSum = ps.reduce((x, p) => x + (p.notes === 'تم الدفع' ? Number(p.amount || 0) : 0), 0)
-            const remaining = Math.max(0, total - paidSum)
+            const { total, paid, remaining } = studentStats(s)
             const status =
               total === 0
-                ? { label: 'بدون دفعات', cls: 'bg-slate-100 text-slate-500' }
-                : paidSum >= total
+                ? { label: 'بدون سعر محدد', cls: 'bg-slate-100 text-slate-500' }
+                : remaining === 0
                 ? { label: 'مدفوع بالكامل', cls: 'bg-emerald-100 text-emerald-700' }
-                : paidSum > 0
+                : paid > 0
                 ? { label: 'دفع جزئي', cls: 'bg-amber-100 text-amber-700' }
                 : { label: 'غير مدفوع', cls: 'bg-rose-100 text-rose-700' }
 
@@ -395,7 +403,7 @@ export default function PaymentsPage() {
                 <div className="mb-3 flex items-center justify-between text-sm">
                   <span className="text-slate-500">المدفوع / المستحق</span>
                   <span className="font-extrabold text-slate-800">
-                    {fmtMoney(paidSum)} / {fmtMoney(total)} ج.م
+                    {fmtMoney(paid)} / {fmtMoney(total)} ج.م
                   </span>
                 </div>
                 <div className="flex gap-2">
@@ -489,7 +497,7 @@ export default function PaymentsPage() {
                 <thead className="border-b border-slate-100 bg-slate-50">
                   <tr>
                     <th className="th">الطالب</th>
-                    <th className="th text-center">المستحق</th>
+                    <th className="th text-center">المبلغ</th>
                     <th className="th text-center">الحالة</th>
                     <th className="th text-center">تاريخ الدفع</th>
                     <th className="th text-center">إجراءات</th>
@@ -579,7 +587,7 @@ export default function PaymentsPage() {
             </select>
           </div>
           <div>
-            <label className="label">المستحق (ج.م)</label>
+            <label className="label">المبلغ (ج.م)</label>
             <input type="number" className="input" value={amount} onChange={(e) => setAmount(e.target.value)} min="0" />
           </div>
         </div>
@@ -611,8 +619,8 @@ export default function PaymentsPage() {
             />
           </div>
           {payingStudent && (
-            <div className="rounded-xl bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700">
-              <CheckCircle2 className="inline h-4 w-4" /> سيتم تسجيل هذا المبلغ كمدفوع بالكامل
+            <div className="rounded-xl bg-primary-50 px-4 py-3 text-sm font-bold text-primary-700">
+              إجمالي المستحق على الطالب: {fmtMoney(studentStats(payingStudent).total)} ج.م | المتبقي: {fmtMoney(studentStats(payingStudent).remaining)} ج.م
             </div>
           )}
         </div>
