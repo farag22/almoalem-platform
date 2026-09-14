@@ -195,22 +195,23 @@ export default function GroupsPage() {
 
   return (
     <div className="space-y-6 pb-12">
-      <div className="flex items-center justify-between">
+      {/* تعديل الهيدر والأزرار لترتيبها بشكل منعزل ومنتظم بدون تداخل */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-extrabold text-slate-800">المجاميع</h1>
           <p className="mt-1 text-sm text-slate-500">أنشئ مجاميعك وحدّد مواعيد الحصص والأسعار ونمط التعليم</p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <button onClick={exportExcel} className="btn-outline">
+        <div className="flex flex-wrap items-center gap-2">
+          <button onClick={exportExcel} className="btn-outline flex items-center gap-1.5 text-xs sm:text-sm">
             <FileSpreadsheet className="h-4 w-4" />
             تصدير Excel
           </button>
-          <button onClick={openPrint} className="btn-outline">
+          <button onClick={openPrint} className="btn-outline flex items-center gap-1.5 text-xs sm:text-sm">
             <Printer className="h-4 w-4" />
             طباعة / PDF
           </button>
-          <button onClick={openCreate} className="btn-primary">
-            <Plus className="h-5 w-5" />
+          <button onClick={openCreate} className="btn-primary flex items-center gap-1.5 text-xs sm:text-sm">
+            <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
             مجموعة جديدة
           </button>
         </div>
@@ -235,16 +236,16 @@ export default function GroupsPage() {
               <div className="h-2" style={{ backgroundColor: g.color_code }} />
               <div className="p-5">
                 <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
                     <span
-                      className="flex h-11 w-11 items-center justify-center rounded-xl text-lg font-extrabold text-white"
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-lg font-extrabold text-white"
                       style={{ backgroundColor: g.color_code }}
                     >
                       {g.group_name.charAt(0)}
                     </span>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-extrabold text-slate-800">{g.group_name}</h3>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-extrabold text-slate-800 truncate">{g.group_name}</h3>
                         <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${
                           g.type === 'online' ? 'bg-indigo-50 text-indigo-600' : 'bg-emerald-50 text-emerald-600'
                         }`}>
@@ -253,7 +254,7 @@ export default function GroupsPage() {
                         </span>
                       </div>
                       {g.days && (
-                        <p className="text-xs text-slate-500 mt-0.5">🗓️ {g.days} {g.time ? `— ${g.time}` : ''}</p>
+                        <p className="text-xs text-slate-500 mt-1 truncate">🗓️ {g.days} {g.time ? `— ${g.time}` : ''}</p>
                       )}
                       <div className="mt-1 flex items-center gap-2 text-xs font-semibold text-slate-500">
                         <span className="flex items-center gap-1">
@@ -267,7 +268,7 @@ export default function GroupsPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="flex gap-1">
+                  <div className="flex gap-1 shrink-0">
                     <button
                       onClick={() => setGradingGroupId(g.id)}
                       className="rounded-lg p-2 text-slate-400 transition hover:bg-emerald-50 hover:text-emerald-600"
