@@ -9,16 +9,21 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   const fetchProfile = useCallback(async (currentUser) => {
-    if (!currentUser || !currentUser.email) {
+    if (!currentUser) {
       setProfile(null)
       return
     }
-    const { data } = await supabase
-      .from('teachers')
-      .select('id, role, full_name, email, avatar_url')
-      .eq('email', currentUser.email)
-      .maybeSingle()
+
+    // البحث عن المعلم إما بالـ id أو بالـ email لضمان جلب البيانات الصحيحة
+    let query = supabase.from('teachers').select('id, role, full_name, email, avatar_url')
     
+    if (currentUser.id) {
+      query = query.eq('id', currentUser.id)
+    } else if (currentUser.email) {
+      query = query.eq('email', currentUser.email)
+    }
+
+    const { data } = await query.maybeSingle()
     setProfile(data)
   }, [])
 
