@@ -25,7 +25,6 @@ export default function Dashboard() {
   const [todayAttendance, setTodayAttendance] = useState([])
   const [loading, setLoading] = useState(true)
 
-  // جلب أحدث بيانات المعلم مباشرة لضمان ظهور الصورة والاسم المحدثين
   useEffect(() => {
     async function fetchLatestProfile() {
       if (!user?.email && !teacherId) return
