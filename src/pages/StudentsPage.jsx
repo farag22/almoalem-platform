@@ -210,7 +210,6 @@ export default function StudentsPage() {
     const studentObj = students.find((s) => s.id === studentId)
     const grp = groupById(studentObj?.group_id)
     
-    // حساب المبلغ المستحق من سعر المجموعة الأساسي
     const total = grp 
       ? (grp.subscription_type === 'monthly' ? Number(grp.monthly_price || 0) : Number(grp.session_price || 0))
       : 0
@@ -260,36 +259,37 @@ export default function StudentsPage() {
   }
 
   return (
-    <div className="w-full max-w-full space-y-3 overflow-x-hidden p-3 md:space-y-4 md:p-6">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div className="w-full max-w-full space-y-4 overflow-x-hidden p-3 md:space-y-6 md:p-6">
+      {/* تعديل الهيدر والأزرار لترتيبها بشكل جمالي متناسق بدون أي تداخل */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-extrabold text-slate-800 md:text-2xl">الطلاب</h1>
-          <p className="mt-0.5 text-xs text-slate-500 md:text-sm">
+          <h1 className="text-2xl font-extrabold text-slate-800">الطلاب</h1>
+          <p className="mt-1 text-sm text-slate-500">
             إدارة الطلاب، أكواد أولياء الأمور، ومتابعة الحضور والمصاريف
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <button onClick={() => setGradingOpen(true)} className="btn-primary">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+          <button onClick={() => setGradingOpen(true)} className="btn-primary col-span-2 sm:col-auto flex items-center justify-center gap-1.5 text-xs sm:text-sm shadow-md">
             <ClipboardList className="h-4 w-4" />
             رصد الحصة اليومية
           </button>
-          <button onClick={exportExcel} className="btn-outline">
+          <button onClick={exportExcel} className="btn-outline flex items-center justify-center gap-1.5 text-xs sm:text-sm bg-white">
             <FileSpreadsheet className="h-4 w-4" />
             تصدير Excel
           </button>
-          <button onClick={openPrint} className="btn-outline">
+          <button onClick={openPrint} className="btn-outline flex items-center justify-center gap-1.5 text-xs sm:text-sm bg-white">
             <Printer className="h-4 w-4" />
             طباعة / PDF
           </button>
-          <button onClick={openCreate} className="btn-outline">
-            <Plus className="h-5 w-5" />
+          <button onClick={openCreate} className="btn-outline col-span-2 sm:col-auto flex items-center justify-center gap-1.5 text-xs sm:text-sm border-primary-600 text-primary-700 bg-indigo-50/50 hover:bg-indigo-50">
+            <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
             طالب جديد
           </button>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="card flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:gap-3 sm:p-4">
+      <div className="card flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:gap-4 sm:p-4 shadow-sm">
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
           <input
@@ -322,26 +322,26 @@ export default function StudentsPage() {
 
       {/* Mobile cards */}
       {filtered.length > 0 && (
-        <div className="flex flex-col gap-2 md:hidden">
+        <div className="flex flex-col gap-3 md:hidden">
           {filtered.map((s) => {
             const grp = groupById(s.group_id)
             const { total, paid, remaining } = paymentStatsFor(s.id)
             const attStatus = attendanceMap[s.id]
             return (
-              <div key={s.id} className="card p-3 space-y-2.5">
+              <div key={s.id} className="card p-4 space-y-3 shadow-sm hover:shadow-md transition">
                 <div className="flex items-start justify-between gap-2">
-                  <div className="flex min-w-0 items-center gap-2.5">
+                  <div className="flex min-w-0 items-center gap-3">
                     <span
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-extrabold text-white"
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-base font-extrabold text-white shadow-sm"
                       style={{ backgroundColor: grp?.color_code || '#2547eb' }}
                     >
                       {s.student_name.charAt(0)}
                     </span>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-sm font-extrabold text-slate-800">{s.student_name}</p>
+                        <p className="text-base font-extrabold text-slate-800">{s.student_name}</p>
                         {total === 0 ? (
-                          <span className="text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full font-bold">بدون سعر</span>
+                          <span className="text-[10px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full font-bold">بدون سعر</span>
                         ) : remaining === 0 ? (
                           <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-bold">مدفوع ({fmtMoney(paid)}/{fmtMoney(total)})</span>
                         ) : paid > 0 ? (
@@ -350,26 +350,26 @@ export default function StudentsPage() {
                           <span className="text-[10px] text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full font-bold">متبقي: {fmtMoney(remaining)} / {fmtMoney(total)}</span>
                         )}
                       </div>
-                      <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                      <div className="mt-1 flex items-center gap-2 flex-wrap">
                         {grp ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
-                            <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: grp.color_code }} />
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-600">
+                            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: grp.color_code }} />
                             {grp.group_name}
                           </span>
                         ) : (
-                          <span className="text-[10px] text-slate-400">بدون مجموعة</span>
+                          <span className="text-xs text-slate-400">بدون مجموعة</span>
                         )}
 
                         {attStatus === 'present' ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
-                            <CheckCircle2 className="h-3 w-3" /> حاضر
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700">
+                            <CheckCircle2 className="h-3.5 w-3.5" /> حاضر
                           </span>
                         ) : attStatus === 'absent' ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-700">
-                            <XCircle className="h-3 w-3" /> غائب
+                          <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-bold text-rose-700">
+                            <XCircle className="h-3.5 w-3.5" /> غائب
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-500">
                             لم يسجل
                           </span>
                         )}
@@ -394,27 +394,27 @@ export default function StudentsPage() {
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-slate-100 pt-2">
+                <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-slate-100 pt-3">
                   <div className="flex min-w-0 items-center gap-1.5 text-xs text-slate-500">
                     <KeyRound className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-                    <code className="truncate rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[11px]" dir="ltr">
+                    <code className="truncate rounded bg-slate-100 px-2 py-0.5 font-mono text-xs font-bold text-slate-700" dir="ltr">
                       {s.student_code}
                     </code>
                     <button
                       onClick={() => copyCode(s.student_code)}
-                      className="shrink-0 p-0.5 text-slate-400 transition hover:text-primary-600"
+                      className="shrink-0 p-1 text-slate-400 transition hover:text-primary-600"
                       title="نسخ الكود"
                     >
                       {copiedId === s.student_code ? (
-                        <Check className="h-3.5 w-3.5 text-emerald-600" />
+                        <Check className="h-4 w-4 text-emerald-600" />
                       ) : (
-                        <Copy className="h-3.5 w-3.5" />
+                        <Copy className="h-4 w-4" />
                       )}
                     </button>
                   </div>
                   <div className="flex min-w-0 items-center gap-1.5 text-xs text-slate-500">
                     <Phone className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-                    <span className="truncate" dir="ltr">
+                    <span className="truncate font-medium" dir="ltr">
                       {s.parent_phone || '—'}
                     </span>
                   </div>
@@ -433,10 +433,10 @@ export default function StudentsPage() {
                     target="_blank"
                     rel="noopener noreferrer"
                     title="تذكير واتساب بسداد المصاريف"
-                    className="mt-1 inline-flex items-center gap-1.5 rounded-lg bg-[#25D366] px-2.5 py-1.5 text-[11px] font-bold text-white transition hover:bg-[#1fb355]"
+                    className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#25D366] px-3 py-2 text-xs font-bold text-white transition hover:bg-[#1fb355] shadow-sm"
                   >
-                    <WaIcon className="h-3.5 w-3.5" />
-                    تذكير بالمصاريف
+                    <WaIcon className="h-4 w-4" />
+                    تذكير ولي الأمر بالمصاريف عبر واتساب
                   </a>
                 )}
               </div>
@@ -447,7 +447,7 @@ export default function StudentsPage() {
 
       {/* Desktop table */}
       {filtered.length > 0 && (
-        <div className="card hidden overflow-hidden md:block">
+        <div className="card hidden overflow-hidden md:block shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[850px]">
               <thead className="border-b border-slate-100 bg-slate-50">
@@ -471,17 +471,17 @@ export default function StudentsPage() {
                       <td className="td">
                         <div className="flex items-center gap-3">
                           <span
-                            className="flex h-9 w-9 items-center justify-center rounded-xl text-sm font-extrabold text-white"
+                            className="flex h-10 w-10 items-center justify-center rounded-xl text-sm font-extrabold text-white shadow-sm"
                             style={{ backgroundColor: grp?.color_code || '#2547eb' }}
                           >
                             {s.student_name.charAt(0)}
                           </span>
-                          <span className="font-bold">{s.student_name}</span>
+                          <span className="font-bold text-slate-800">{s.student_name}</span>
                         </div>
                       </td>
                       <td className="td">
                         {grp ? (
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-600">
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
                             <span className="h-2 w-2 rounded-full" style={{ backgroundColor: grp.color_code }} />
                             {grp.group_name}
                           </span>
@@ -521,7 +521,7 @@ export default function StudentsPage() {
                       </td>
                       <td className="td">
                         <div className="flex items-center gap-2">
-                          <code className="rounded bg-slate-100 px-2 py-1 font-mono text-xs" dir="ltr">
+                          <code className="rounded bg-slate-100 px-2.5 py-1 font-mono text-xs font-bold text-slate-700" dir="ltr">
                             {s.student_code}
                           </code>
                           <button
@@ -539,7 +539,7 @@ export default function StudentsPage() {
                       </td>
                       <td className="td">
                         {s.parent_phone ? (
-                          <span className="inline-flex items-center gap-1.5 text-sm" dir="ltr">
+                          <span className="inline-flex items-center gap-1.5 text-sm font-medium" dir="ltr">
                             <Phone className="h-4 w-4 text-slate-400" />
                             {s.parent_phone}
                           </span>
@@ -547,7 +547,7 @@ export default function StudentsPage() {
                           <span className="text-xs text-slate-400">—</span>
                         )}
                         {s.parent_phone && remaining > 0 && (
-                          <span className="mt-1.5 flex items-center justify-center gap-2">
+                          <span className="mt-1.5 flex items-center">
                             <a
                               href={waLink(
                                 s.parent_phone,
@@ -560,7 +560,7 @@ export default function StudentsPage() {
                               target="_blank"
                               rel="noopener noreferrer"
                               title="تذكير واتساب بسداد المصاريف"
-                              className="inline-flex items-center gap-1.5 rounded-lg bg-[#25D366] px-2.5 py-1.5 text-xs font-bold text-white transition hover:bg-[#1fb355]"
+                              className="inline-flex items-center gap-1.5 rounded-lg bg-[#25D366] px-2.5 py-1.5 text-xs font-bold text-white transition hover:bg-[#1fb355] shadow-sm"
                             >
                               <WaIcon className="h-3.5 w-3.5" />
                               تذكير بالمصاريف
