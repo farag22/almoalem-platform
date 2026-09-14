@@ -36,6 +36,7 @@ export default function StudentsPage() {
     if (!teacherId) return
     setLoading(true)
     try {
+      // جلب الطلاب والمجموعات والمدفوعات الخاصة بالمعلم مباشرة وبشكل موثوق
       const [sRes, gRes] = await Promise.all([
         supabase
           .from('students')
@@ -52,13 +53,13 @@ export default function StudentsPage() {
       const studentList = sRes.data ?? []
       const groupList = gRes.data ?? []
 
-      const ids = studentList.map((s) => s.id)
       let pRes = []
-      if (ids.length > 0) {
+      if (studentList.length > 0) {
+        const studentIds = studentList.map((s) => s.id)
         const { data: paymentsData } = await supabase
           .from('payments')
           .select('student_id, amount, is_paid')
-          .in('student_id', ids)
+          .in('student_id', studentIds)
         pRes = paymentsData ?? []
       }
 
@@ -136,7 +137,7 @@ export default function StudentsPage() {
       } else {
         toast('تم تعديل بيانات الطالب')
         setModalOpen(false)
-        load()
+        await load()
       }
     } else {
       const { error } = await supabase.from('students').insert([payload])
@@ -150,7 +151,7 @@ export default function StudentsPage() {
       } else {
         toast('تم إضافة الطالب بنجاح')
         setModalOpen(false)
-        load()
+        await load()
       }
     }
     setSaving(false)
@@ -171,7 +172,7 @@ export default function StudentsPage() {
     if (error) toast('تعذر حذف الطالب', 'error')
     else {
       toast('تم حذف الطالب')
-      load()
+      await load()
     }
   }
 
