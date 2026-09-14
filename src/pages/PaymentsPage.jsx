@@ -106,15 +106,16 @@ export default function PaymentsPage() {
     let collected = 0
     payments.forEach((p) => {
       total += Number(p.amount || 0)
-      if (p.is_paid) collected += Number(p.amount || 0)
+      // الاعتماد على الملاحظات أو الحالة إذا وجدت، وإلا الاحتساب حسب القيمة
+      if (p.notes === 'تم الدفع' || Number(p.amount || 0) > 0) collected += Number(p.amount || 0)
     })
-    return { total, collected, remaining: total - collected }
+    return { total, collected, remaining: Math.max(0, total - collected) }
   }, [payments])
 
   const studentStats = (s) => {
     const ps = paymentsFor(s.id)
     const total = ps.reduce((x, p) => x + Number(p.amount || 0), 0)
-    const paid = ps.reduce((x, p) => x + (p.is_paid ? Number(p.amount || 0) : 0), 0)
+    const paid = ps.reduce((x, p) => x + (p.notes === 'تم الدفع' ? Number(p.amount || 0) : 0), 0)
     return { total, paid, remaining: Math.max(0, total - paid) }
   }
 
@@ -188,18 +189,25 @@ export default function PaymentsPage() {
     setSaving(true)
     const payload = {
       teacher_id: teacherId,
+      user_id: teacherId,
       student_id: studentId,
       amount: Number(amount),
+      date: new Date().toISOString().slice(0, 10),
+      notes: 'مستحق',
     }
 
     if (editing) {
       const { error } = await supabase.from('payments').update(payload).eq('id', editing.id)
-      if (error) toast('تعذر تعديل الدفعة', 'error')
-      else toast('تم تعديل الدفعة')
+      if (error) {
+        console.error('Update error:', error)
+        toast('تعذر تعديل الدفعة', 'error')
+      } else toast('تم تعديل الدفعة')
     } else {
       const { error } = await supabase.from('payments').insert([payload])
-      if (error) toast('تعذر إضافة الدفعة', 'error')
-      else toast('تم إضافة الدفعة')
+      if (error) {
+        console.error('Insert error:', error)
+        toast('تعذر إضافة الدفعة', 'error')
+      } else toast('تم إضافة الدفعة')
     }
     setSaving(false)
     setModalOpen(false)
@@ -207,15 +215,16 @@ export default function PaymentsPage() {
   }
 
   const markPaid = async (p) => {
+    const newNotes = p.notes === 'تم الدفع' ? 'مستحق' : 'تم الدفع'
     const { error } = await supabase
       .from('payments')
       .update({
-        is_paid: !p.is_paid,
-        paid_at: !p.is_paid ? new Date().toISOString() : null,
+        notes: newNotes,
+        date: new Date().toISOString().slice(0, 10),
       })
       .eq('id', p.id)
     if (error) toast('تعذر التحديث', 'error')
-    else toast(p.is_paid ? 'تم إلغاء الدفع' : `تم تسجيل دفع ${fmtMoney(p.amount)} ج.م`)
+    else toast(newNotes === 'مستحق' ? 'تم إلغاء الدفع' : `تم تسجيل دفع ${fmtMoney(p.amount)} ج.م`)
     load()
   }
 
@@ -227,10 +236,11 @@ export default function PaymentsPage() {
     setSaving(true)
     const payload = {
       teacher_id: teacherId,
+      user_id: teacherId,
       student_id: payingStudent.id,
       amount: Number(payAmount),
-      is_paid: true,
-      paid_at: new Date().toISOString(),
+      date: new Date().toISOString().slice(0, 10),
+      notes: 'تم الدفع',
     }
     const { error } = await supabase.from('payments').insert([payload])
     if (error) {
@@ -352,7 +362,7 @@ export default function PaymentsPage() {
             const grp = groupById(s.group_id)
             const ps = paymentsFor(s.id)
             const total = ps.reduce((x, p) => x + Number(p.amount || 0), 0)
-            const paidSum = ps.reduce((x, p) => x + (p.is_paid ? Number(p.amount || 0) : 0), 0)
+            const paidSum = ps.reduce((x, p) => x + (p.notes === 'تم الدفع' ? Number(p.amount || 0) : 0), 0)
             const remaining = Math.max(0, total - paidSum)
             const status =
               total === 0
@@ -428,7 +438,8 @@ export default function PaymentsPage() {
           <>
             <div className="block md:hidden divide-y divide-slate-100">
               {payments.map((p) => {
-                const st = p.is_paid
+                const isPaid = p.notes === 'تم الدفع'
+                const st = isPaid
                   ? { label: 'مدفوع', cls: 'bg-emerald-100 text-emerald-700' }
                   : { label: 'غير مدفوع', cls: 'bg-rose-100 text-rose-700' }
                 const studentObj = students.find((s) => s.id === p.student_id)
@@ -440,16 +451,16 @@ export default function PaymentsPage() {
                     </div>
                     <div className="flex items-center justify-between text-xs text-slate-500">
                       <span>المبلغ: <strong className="text-slate-800">{fmtMoney(p.amount)} ج.م</strong></span>
-                      <span>{p.paid_at ? new Date(p.paid_at).toLocaleDateString('ar-EG') : '—'}</span>
+                      <span>{p.date ? p.date : '—'}</span>
                     </div>
                     <div className="flex justify-end gap-2 pt-1">
                       <button
                         onClick={() => markPaid(p)}
                         className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
-                          p.is_paid ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'
+                          isPaid ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'
                         }`}
                       >
-                        {p.is_paid ? 'إلغاء' : 'دفع'}
+                        {isPaid ? 'إلغاء' : 'دفع'}
                       </button>
                       <button
                         onClick={() => openEdit(p)}
@@ -486,7 +497,8 @@ export default function PaymentsPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-50">
                   {payments.map((p) => {
-                    const st = p.is_paid
+                    const isPaid = p.notes === 'تم الدفع'
+                    const st = isPaid
                       ? { label: 'مدفوع', cls: 'bg-emerald-100 text-emerald-700' }
                       : { label: 'غير مدفوع', cls: 'bg-rose-100 text-rose-700' }
                     const studentObj = students.find((s) => s.id === p.student_id)
@@ -498,19 +510,19 @@ export default function PaymentsPage() {
                           <span className={`badge ${st.cls}`}>{st.label}</span>
                         </td>
                         <td className="td text-center text-xs text-slate-500">
-                          {p.paid_at ? new Date(p.paid_at).toLocaleDateString('ar-EG') : '—'}
+                          {p.date ? p.date : '—'}
                         </td>
                         <td className="td text-center">
                           <div className="flex justify-center gap-1">
                             <button
                               onClick={() => markPaid(p)}
                               className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
-                                p.is_paid
+                                isPaid
                                   ? 'bg-amber-50 text-amber-700 hover:bg-amber-100'
                                   : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
                               }`}
                             >
-                              {p.is_paid ? 'إلغاء' : 'دفع'}
+                              {isPaid ? 'إلغاء' : 'دفع'}
                             </button>
                             <button
                               onClick={() => openEdit(p)}
