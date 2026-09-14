@@ -25,6 +25,7 @@ const NAV = [
   { to: '/dashboard/attendance', label: 'الحضور', icon: CalendarCheck },
   { to: '/dashboard/payments', label: 'المصاريف', icon: Wallet },
   { to: '/dashboard/sessions', label: 'ماسح Qr', icon: Calendar },
+  { to: '/dashboard/profile', label: 'الملف الشخصي', icon: User }, // زر الملف الشخصي المضاف
 ]
 
 function SidebarContent({ onNavigate }) {
@@ -144,7 +145,7 @@ export default function DashboardLayout() {
 
         {/* Sidebar mobile drawer */}
         {mobileOpen && (
-          <div className="fixed inset-0 z-50 lg:hidden">
+          <div className="flex min-h-screen inset-0 z-50 lg:hidden">
             <div className="absolute inset-0 bg-slate-900/60" onClick={() => setMobileOpen(false)} />
             <aside className="absolute inset-y-0 right-0 w-72">
               <div className="relative h-full bg-gradient-to-b from-primary-700 to-primary-900 shadow-2xl">
