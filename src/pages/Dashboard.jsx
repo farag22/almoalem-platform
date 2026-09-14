@@ -11,6 +11,7 @@ import {
   UserX,
   Clock,
   QrCode,
+  User,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -134,13 +135,23 @@ export default function Dashboard() {
     <div className="space-y-6">
       {/* Welcome Card */}
       <div className="card flex flex-col gap-4 bg-gradient-to-l from-primary-700 to-indigo-900 p-6 text-white sm:flex-row sm:items-center sm:justify-between shadow-lg">
-        <div>
-          <h1 className="text-2xl font-extrabold">
-            مرحباً، {profile?.full_name || user?.email || 'أستاذي الفاضل'}
-          </h1>
-          <p className="mt-1 text-sm text-indigo-200">
-            إليك ملخص منصتك لهذا اليوم — {fmtDate(new Date())}
-          </p>
+        <div className="flex items-center gap-4">
+          {/* عرض صورة المعلم في بطاقة الترحيب */}
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white/10 text-xl font-bold text-white overflow-hidden border-2 border-white/20 shadow-inner">
+            {profile?.avatar_url ? (
+              <img src={profile.avatar_url} alt="Profile" className="h-full w-full object-cover" />
+            ) : (
+              (profile?.full_name || user?.email || 'م').charAt(0).toUpperCase()
+            )}
+          </div>
+          <div>
+            <h1 className="text-2xl font-extrabold">
+              مرحباً، {profile?.full_name || user?.email || 'أستاذي الفاضل'}
+            </h1>
+            <p className="mt-1 text-sm text-indigo-200">
+              إليك ملخص منصتك لهذا اليوم — {fmtDate(new Date())}
+            </p>
+          </div>
         </div>
         <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
           {/* زر الماسح بلون مميز وجذاب */}
