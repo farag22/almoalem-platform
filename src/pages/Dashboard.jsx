@@ -28,6 +28,7 @@ export default function Dashboard() {
   const load = async () => {
     setLoading(true)
     const today = new Date().toISOString().slice(0, 10)
+    console.log("Today's Date for filtering attendance:", today)
 
     const { data: myStudentIds } = await supabase
       .from('students')
@@ -44,7 +45,7 @@ export default function Dashboard() {
         .order('created_at'),
       supabase.from('students').select('id, group_id').eq('teacher_id', teacherId),
       ids.length
-        ? supabase.from('attendance').select('student_id').in('student_id', ids)
+        ? supabase.from('attendance').select('student_id, date, status').in('student_id', ids)
         : Promise.resolve({ data: [] }),
       ids.length
         ? supabase.from('payments').select('amount, notes').in('student_id', ids)
@@ -52,12 +53,14 @@ export default function Dashboard() {
       ids.length
         ? supabase
             .from('attendance')
-            .select('status, student_id, students(student_name)')
-            .eq('date', today) // تم التعديل ليستعمل عمود date الصحيح في قاعدة البيانات
+            .select('status, student_id, date, students(student_name)')
+            .eq('date', today)
             .in('student_id', ids)
-            .order('created_at')
         : Promise.resolve({ data: [] }),
     ])
+
+    console.log("All Attendance Records in DB:", a.data)
+    console.log("Today's Filtered Attendance:", attToday.data)
 
     setGroups(g.data ?? [])
     const students = s.data ?? []
@@ -84,34 +87,10 @@ export default function Dashboard() {
   }
 
   useEffect(() => {
-    load()
-  }, [])
-
-  const quickMark = async (studentId, status) => {
-    const today = new Date().toISOString().slice(0, 10)
-    const existing = await supabase
-      .from('attendance')
-      .select('id')
-      .eq('student_id', studentId)
-      .eq('date', today) // استخدام عمود date
-      .maybeSingle()
-
-    if (existing.data) {
-      const { error } = await supabase
-        .from('attendance')
-        .update({ status })
-        .eq('id', existing.data.id)
-      if (error) toast('تعذر تحديث الحالة', 'error')
-      else toast('تم تحديث الحضور')
-    } else {
-      const { error } = await supabase
-        .from('attendance')
-        .insert({ student_id: studentId, date: today, status }) // استخدام عمود date
-      if (error) toast('تعذر تسجيل الحضور', 'error')
-      else toast('تم تسجيل الحضور')
+    if (teacherId) {
+      load()
     }
-    load()
-  }
+  }, [teacherId])
 
   if (loading) {
     return (
