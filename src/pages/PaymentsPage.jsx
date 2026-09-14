@@ -187,6 +187,7 @@ export default function PaymentsPage() {
     }
     setSaving(true)
     const payload = {
+      teacher_id: teacherId,
       student_id: studentId,
       amount: Number(amount),
     }
@@ -225,6 +226,7 @@ export default function PaymentsPage() {
     }
     setSaving(true)
     const payload = {
+      teacher_id: teacherId,
       student_id: payingStudent.id,
       amount: Number(payAmount),
       is_paid: true,
