@@ -53,7 +53,7 @@ export default function Dashboard() {
         ? supabase
             .from('attendance')
             .select('status, student_id, session_date, students(student_name)')
-            .eq('session_date', today) // استخدام session_date الصحيح
+            .eq('session_date', today)
             .in('student_id', ids)
         : Promise.resolve({ data: [] }),
     ])
