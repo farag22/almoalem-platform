@@ -58,7 +58,7 @@ export default function StudentsPage() {
       if (studentList.length > 0) {
         const studentIds = studentList.map((s) => s.id)
         const [paymentsData, attData] = await Promise.all([
-          supabase.from('payments').select('student_id, amount, is_paid').in('student_id', studentIds),
+          supabase.from('payments').select('*').eq('teacher_id', teacherId),
           supabase.from('attendance').select('student_id, status, date').in('student_id', studentIds).order('date', { ascending: false }),
         ])
         pRes = paymentsData.data ?? []
@@ -207,9 +207,11 @@ export default function StudentsPage() {
   const groupById = (id) => groups.find((g) => g.id === id)
 
   const paymentStatsFor = (studentId) => {
-    const ps = payments.filter((p) => p.student_id === studentId)
-    const total = ps.reduce((x, p) => x + Number(p.amount || 0), 0)
-    const paid = ps.reduce((x, p) => x + (p.is_paid ? Number(p.amount || 0) : 0), 0)
+    const ps = payments.filter((p) => p.student_id === studentId || p.student === studentId)
+    if (ps.length === 0) return { total: 0, paid: 0, remaining: 0 }
+    
+    const total = ps.reduce((x, p) => x + Number(p.amount || p.total || p.cost || 0), 0)
+    const paid = ps.reduce((x, p) => x + (p.is_paid || p.paid || p.status === 'paid' ? Number(p.amount || p.total || p.cost || 0) : 0), 0)
     const remaining = Math.max(0, total - paid)
     return { total, paid, remaining }
   }
