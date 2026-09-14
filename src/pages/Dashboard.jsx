@@ -28,7 +28,6 @@ export default function Dashboard() {
   const load = async () => {
     setLoading(true)
     const today = new Date().toISOString().slice(0, 10)
-    console.log("Today's Date for filtering attendance:", today)
 
     const { data: myStudentIds } = await supabase
       .from('students')
@@ -45,7 +44,7 @@ export default function Dashboard() {
         .order('created_at'),
       supabase.from('students').select('id, group_id').eq('teacher_id', teacherId),
       ids.length
-        ? supabase.from('attendance').select('student_id, date, status').in('student_id', ids)
+        ? supabase.from('attendance').select('student_id, session_date, status').in('student_id', ids)
         : Promise.resolve({ data: [] }),
       ids.length
         ? supabase.from('payments').select('amount, notes').in('student_id', ids)
@@ -53,14 +52,11 @@ export default function Dashboard() {
       ids.length
         ? supabase
             .from('attendance')
-            .select('status, student_id, date, students(student_name)')
-            .eq('date', today)
+            .select('status, student_id, session_date, students(student_name)')
+            .eq('session_date', today) // استخدام session_date الصحيح
             .in('student_id', ids)
         : Promise.resolve({ data: [] }),
     ])
-
-    console.log("All Attendance Records in DB:", a.data)
-    console.log("Today's Filtered Attendance:", attToday.data)
 
     setGroups(g.data ?? [])
     const students = s.data ?? []
