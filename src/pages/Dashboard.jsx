@@ -11,21 +11,39 @@ import {
   UserX,
   Clock,
   QrCode,
-  User,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { useToast } from '../components/ui/Toast'
 import { Spinner } from '../App'
 import { fmtDate } from '../lib/constants'
 
 export default function Dashboard() {
   const { profile, user, teacherId } = useAuth()
-  const toast = useToast()
+  const [currentProfile, setCurrentProfile] = useState(profile)
   const [stats, setStats] = useState(null)
   const [groups, setGroups] = useState([])
   const [todayAttendance, setTodayAttendance] = useState([])
   const [loading, setLoading] = useState(true)
+
+  // جلب أحدث بيانات المعلم مباشرة لضمان ظهور الصورة والاسم المحدثين
+  useEffect(() => {
+    async function fetchLatestProfile() {
+      if (!user?.email && !teacherId) return
+      let query = supabase.from('teachers').select('id, full_name, email, avatar_url, role')
+      if (teacherId) {
+        query = query.eq('id', teacherId)
+      } else if (user?.email) {
+        query = query.eq('email', user.email)
+      }
+      const { data } = await query.maybeSingle()
+      if (data) {
+        setCurrentProfile(data)
+      } else if (profile) {
+        setCurrentProfile(profile)
+      }
+    }
+    fetchLatestProfile()
+  }, [user, teacherId, profile])
 
   const load = async () => {
     setLoading(true)
@@ -136,17 +154,17 @@ export default function Dashboard() {
       {/* Welcome Card */}
       <div className="card flex flex-col gap-4 bg-gradient-to-l from-primary-700 to-indigo-900 p-6 text-white sm:flex-row sm:items-center sm:justify-between shadow-lg">
         <div className="flex items-center gap-4">
-          {/* عرض صورة المعلم في بطاقة الترحيب */}
+          {/* دائرة الصورة الشخصية */}
           <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white/10 text-xl font-bold text-white overflow-hidden border-2 border-white/20 shadow-inner">
-            {profile?.avatar_url ? (
-              <img src={profile.avatar_url} alt="Profile" className="h-full w-full object-cover" />
+            {currentProfile?.avatar_url ? (
+              <img src={currentProfile.avatar_url} alt="Profile" className="h-full w-full object-cover" />
             ) : (
-              (profile?.full_name || user?.email || 'م').charAt(0).toUpperCase()
+              (currentProfile?.full_name || user?.email || 'م').charAt(0).toUpperCase()
             )}
           </div>
           <div>
             <h1 className="text-2xl font-extrabold">
-              مرحباً، {profile?.full_name || user?.email || 'أستاذي الفاضل'}
+              مرحباً، {currentProfile?.full_name || user?.email || 'أستاذي الفاضل'}
             </h1>
             <p className="mt-1 text-sm text-indigo-200">
               إليك ملخص منصتك لهذا اليوم — {fmtDate(new Date())}
@@ -154,7 +172,6 @@ export default function Dashboard() {
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
-          {/* زر الماسح بلون مميز وجذاب */}
           <Link
             to="/dashboard/sessions"
             className="col-span-2 flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 text-sm font-extrabold text-white shadow-md transition-all hover:bg-emerald-600 active:scale-95"
@@ -194,7 +211,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Stat cards - محسنة لتكون في عمودين لتقليل التمرير */}
+      {/* Stat cards */}
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         {cards.map((c) => (
           <Link
