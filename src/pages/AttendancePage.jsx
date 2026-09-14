@@ -29,7 +29,7 @@ export default function AttendancePage() {
   const [groups, setGroups] = useState([])
   const [groupFilter, setGroupFilter] = useState('all')
   const [students, setStudents] = useState([])
-  const [records, setRecords] = useState({}) // key: studentId -> status
+  const [records, setRecords] = useState({})
   const [date, setDate] = useState(today)
   const [loading, setLoading] = useState(true)
   const [savingKey, setSavingKey] = useState(null)
@@ -239,7 +239,6 @@ export default function AttendancePage() {
 
   return (
     <div className="space-y-4 md:space-y-6">
-      {/* هيدر الصفحة والأزرار بتنسيق جمالي متناسق */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-extrabold text-slate-800">الحضور والغياب</h1>
@@ -261,7 +260,6 @@ export default function AttendancePage() {
         </div>
       </div>
 
-      {/* Controls & Date selection */}
       <div className="card flex flex-col gap-4 p-4 lg:flex-row lg:items-center lg:justify-between shadow-sm">
         <div className="flex items-center justify-between sm:justify-start gap-2">
           <button onClick={() => shiftDay(-1)} className="rounded-xl border border-slate-200 p-2 text-slate-500 hover:bg-slate-50">
@@ -307,7 +305,6 @@ export default function AttendancePage() {
         </div>
       </div>
 
-      {/* Summary strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <SummaryCard label="المسجل" value={`${counts.marked}/${counts.total}`} cls="bg-slate-50 text-slate-700" />
         <SummaryCard label="حاضر" value={counts.present} cls="bg-emerald-50 text-emerald-700" />
@@ -315,7 +312,6 @@ export default function AttendancePage() {
         <SummaryCard label="متأخر" value={counts.late} cls="bg-amber-50 text-amber-700" />
       </div>
 
-      {/* Roster */}
       {filteredStudents.length === 0 ? (
         <div className="card flex flex-col items-center justify-center gap-3 py-16 text-center">
           <CalendarCheck className="h-12 w-12 text-slate-200" />
@@ -323,41 +319,42 @@ export default function AttendancePage() {
           <p className="text-sm text-slate-400">أضف طلاباً أو غيّر تصفية المجموعة</p>
         </div>
       ) : (
-        <div className="card overflow-hidden shadow-sm">
-          <div className="hidden grid-cols-[1fr_repeat(3,100px)_60px] gap-2 border-b border-slate-100 bg-slate-50 px-5 py-3.5 sm:grid">
-            <span className="text-sm font-bold text-slate-600">الطالب</span>
-            <span className="text-center text-sm font-bold text-emerald-600">حاضر</span>
-            <span className="text-center text-sm font-bold text-rose-600">غائب</span>
-            <span className="text-center text-sm font-bold text-amber-600">متأخر</span>
-            <span className="text-center text-sm font-bold text-slate-500">إشعار</span>
-          </div>
-          <div className="divide-y divide-slate-100">
-            {filteredStudents.map((s) => {
-              const grp = groupById(s.group_id)
-              const current = records[s.id]
-              const isAbsent = current === 'absent'
-              const hasPhone = Boolean(s.parent_phone)
-              return (
-                <div key={s.id} className="flex flex-col sm:grid sm:grid-cols-[1fr_repeat(3,100px)_60px] sm:items-center gap-3 p-4 sm:px-5 sm:py-3 transition hover:bg-slate-50/60">
+        <div className="space-y-3">
+          {filteredStudents.map((s) => {
+            const grp = groupById(s.group_id)
+            const current = records[s.id]
+            const isAbsent = current === 'absent'
+            const hasPhone = Boolean(s.parent_phone)
+            const groupColor = grp?.color_code || '#2547eb'
+
+            return (
+              <div 
+                key={s.id} 
+                className="card overflow-hidden transition hover:shadow-md border-r-4"
+                style={{ borderRightColor: groupColor }}
+              >
+                <div className="flex flex-col sm:grid sm:grid-cols-[1fr_repeat(3,100px)_60px] sm:items-center gap-3 p-4 sm:px-5 sm:py-3.5">
                   <div className="flex items-center gap-3">
                     <span
                       className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-extrabold text-white shadow-sm"
-                      style={{ backgroundColor: grp?.color_code || '#2547eb' }}
+                      style={{ backgroundColor: groupColor }}
                     >
                       {s.student_name.charAt(0)}
                     </span>
                     <div className="min-w-0">
                       <p className="font-bold text-slate-800 text-base sm:text-sm truncate">{s.student_name}</p>
                       {grp && (
-                        <span className="inline-flex items-center gap-1 mt-0.5 rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold text-slate-600">
-                          <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: grp.color_code }} />
+                        <span 
+                          className="inline-flex items-center gap-1 mt-0.5 rounded-full px-2.5 py-0.5 text-[11px] font-bold"
+                          style={{ backgroundColor: `${groupColor}15`, color: groupColor }}
+                        >
+                          <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: groupColor }} />
                           {grp.group_name}
                         </span>
                       )}
                     </div>
                   </div>
                   
-                  {/* أزرار الحضور والغياب لكل طالب */}
                   <div className="grid grid-cols-3 gap-2 sm:contents">
                     {STATUS_ORDER.map((status) => {
                       const active = current === status
@@ -412,13 +409,12 @@ export default function AttendancePage() {
                     )}
                   </div>
                 </div>
-              )
-            })}
-          </div>
+              </div>
+            )
+          })}
         </div>
       )}
 
-      {/* Summary modal */}
       <Modal open={summaryOpen} onClose={() => setSummaryOpen(false)} title={`ملخص الحضور — ${fmtDate(date)}`}>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <ModalStat label="المسجل" value={counts.marked} cls="bg-slate-50 text-slate-700" />
