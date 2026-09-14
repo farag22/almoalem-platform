@@ -43,14 +43,25 @@ export default function ParentView() {
     setLoading(true)
     setData(null)
 
-    // البحث بمرونة أكبر (يطابق الكود بغض النظر عن حالة الحروف الكبيرة/الصغيرة)
-    const { data: student, error: err } = await supabase
+    // البحث المباشر المطابق للكود المدخل لضمان العثور على الطالب بدقة
+    const { data: students, error: err } = await supabase
       .from('students')
       .select('*, groups(group_name, color_code), teachers(full_name)')
-      .or(`student_code.ilike.${code},id.eq.${code}`)
-      .maybeSingle()
 
-    if (err || !student) {
+    if (err || !students) {
+      setError('حدث خطأ أثناء الاتصال بقاعدة البيانات')
+      setLoading(false)
+      return
+    }
+
+    // مطابقة الكود بغض النظر عن المسافات أو حالة الحروف
+    const student = students.find(
+      (s) => 
+        String(s.student_code).trim().toLowerCase() === code.toLowerCase() ||
+        String(s.id).trim().toLowerCase() === code.toLowerCase()
+    )
+
+    if (!student) {
       setError('الكود غير صحيح أو الطالب غير موجود')
       setLoading(false)
       return
