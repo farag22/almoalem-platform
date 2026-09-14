@@ -23,7 +23,7 @@ const NAV = [
   { to: '/dashboard/students', label: 'الطلاب', icon: Users },
   { to: '/dashboard/attendance', label: 'الحضور', icon: CalendarCheck },
   { to: '/dashboard/payments', label: 'المصاريف', icon: Wallet },
-  { to: '/dashboard/sessions', label: 'الحصص', icon: Calendar },
+  { to: '/dashboard/sessions', label: 'ماسح Qr', icon: Calendar },
 ]
 
 function SidebarContent({ onNavigate }) {
