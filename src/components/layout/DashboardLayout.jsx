@@ -18,12 +18,12 @@ import { ToastProvider } from '../ui/Toast'
 import { Spinner } from '../../App'
 
 const NAV = [
-  { to: '/dashboard', label: 'لوحة التحكم', icon: LayoutDashboard, end: true },
+  { to: '/dashboard', label: 'الرئيسية', icon: LayoutDashboard, end: true },
   { to: '/dashboard/groups', label: 'المجاميع', icon: Layers },
   { to: '/dashboard/students', label: 'الطلاب', icon: Users },
-  { to: '/dashboard/attendance', label: 'الحضور والغياب', icon: CalendarCheck },
-  { to: '/dashboard/payments', label: 'المصاريف والمدفوعات', icon: Wallet },
-  { to: '/dashboard/sessions', label: 'الحصص والمواعيد', icon: Calendar },
+  { to: '/dashboard/attendance', label: 'الحضور', icon: CalendarCheck },
+  { to: '/dashboard/payments', label: 'المصاريف', icon: Wallet },
+  { to: '/dashboard/sessions', label: 'الحصص', icon: Calendar },
 ]
 
 function SidebarContent({ onNavigate }) {
@@ -128,7 +128,7 @@ export default function DashboardLayout() {
 
   return (
     <ToastProvider>
-      <div className="flex min-h-screen bg-slate-100">
+      <div className="flex min-h-screen bg-slate-100 pb-20 lg:pb-0">
         {/* Sidebar desktop */}
         <aside className="fixed inset-y-0 right-0 z-30 hidden w-64 lg:block">
           <div className="h-full bg-gradient-to-b from-primary-700 to-primary-900">
@@ -136,12 +136,12 @@ export default function DashboardLayout() {
           </div>
         </aside>
 
-        {/* Sidebar mobile */}
+        {/* Sidebar mobile drawer (if opened from header) */}
         {mobileOpen && (
-          <div className="fixed inset-0 z-40 lg:hidden">
+          <div className="fixed inset-0 z-50 lg:hidden">
             <div className="absolute inset-0 bg-slate-900/60" onClick={() => setMobileOpen(false)} />
             <aside className="absolute inset-y-0 right-0 w-72">
-              <div className="relative h-full bg-gradient-to-b from-primary-700 to-primary-900">
+              <div className="relative h-full bg-gradient-to-b from-primary-700 to-primary-900 shadow-2xl">
                 <button
                   onClick={() => setMobileOpen(false)}
                   className="absolute top-4 left-4 rounded-lg bg-white/10 p-2 text-white"
@@ -156,15 +156,15 @@ export default function DashboardLayout() {
 
         {/* Main */}
         <div className="flex min-h-screen flex-1 flex-col lg:mr-64">
-          <header className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200 bg-white/80 px-4 py-3 backdrop-blur lg:px-8">
+          <header className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur lg:px-8">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setMobileOpen(true)}
-                className="rounded-lg border border-slate-200 p-2 text-slate-600 lg:hidden"
+                className="rounded-xl border border-slate-200 p-2 text-slate-600 hover:bg-slate-50 lg:hidden"
               >
                 <Menu className="h-5 w-5" />
               </button>
-              <h1 className="text-lg font-extrabold text-slate-800 lg:hidden">منصة تعليم</h1>
+              <h1 className="text-base font-extrabold text-slate-800 lg:hidden">منصة تعليم</h1>
             </div>
             <div className="flex items-center gap-3 text-sm text-slate-500">
               <span className="hidden sm:inline-flex">
@@ -186,6 +186,27 @@ export default function DashboardLayout() {
             <Outlet />
           </main>
         </div>
+
+        {/* Bottom Navigation Bar for Mobile */}
+        <nav className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-around border-t border-slate-200 bg-white/95 px-2 py-2 shadow-lg backdrop-blur lg:hidden">
+          {NAV.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.end}
+              className={({ isActive }) =>
+                `flex flex-col items-center gap-1 rounded-xl p-2 text-[11px] font-bold transition ${
+                  isActive
+                    ? 'text-primary-600 scale-105'
+                    : 'text-slate-400 hover:text-slate-600'
+                }`
+              }
+            >
+              <item.icon className="h-5 w-5" />
+              <span>{item.label}</span>
+            </NavLink>
+          ))}
+        </nav>
       </div>
     </ToastProvider>
   )
