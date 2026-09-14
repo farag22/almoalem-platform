@@ -7,7 +7,7 @@ import { Spinner } from '../App'
 import Modal from '../components/ui/Modal'
 import PrintReport from '../components/PrintReport'
 import QuickGradingModal from '../components/QuickGradingModal'
-import { GROUP_COLORS } from '../lib/constants'
+import { GROUP_COLORS, fmtMoney } from '../lib/constants'
 import { downloadCSV } from '../lib/export'
 
 const DAYS_OF_WEEK = ['السبت', 'الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة']
@@ -28,6 +28,8 @@ export default function GroupsPage() {
   const [groupType, setGroupType] = useState('center')
   const [subscriptionType, setSubscriptionType] = useState('monthly')
   const [sessionsPerMonth, setSessionsPerMonth] = useState(8)
+  const [sessionPrice, setSessionPrice] = useState(50)
+  const [monthlyPrice, setMonthlyPrice] = useState(300)
   const [color, setColor] = useState(GROUP_COLORS[0].value)
 
   const [saving, setSaving] = useState(false)
@@ -74,6 +76,8 @@ export default function GroupsPage() {
     setGroupType('center')
     setSubscriptionType('monthly')
     setSessionsPerMonth(8)
+    setSessionPrice(50)
+    setMonthlyPrice(300)
     setColor(GROUP_COLORS[0].value)
     setModalOpen(true)
   }
@@ -87,6 +91,8 @@ export default function GroupsPage() {
     setGroupType(g.type || 'center')
     setSubscriptionType(g.subscription_type || 'monthly')
     setSessionsPerMonth(g.sessions_per_month || 8)
+    setSessionPrice(g.session_price || 50)
+    setMonthlyPrice(g.monthly_price || 300)
     setColor(g.color_code || GROUP_COLORS[0].value)
     setModalOpen(true)
   }
@@ -106,6 +112,8 @@ export default function GroupsPage() {
       type: groupType,
       subscription_type: subscriptionType,
       sessions_per_month: Number(sessionsPerMonth) || 8,
+      session_price: Number(sessionPrice) || 0,
+      monthly_price: Number(monthlyPrice) || 0,
       color_code: color,
     }
 
@@ -146,14 +154,12 @@ export default function GroupsPage() {
       i + 1,
       g.group_name,
       g.days || '-',
-      g.start_date || '-',
-      g.type === 'online' ? 'أونلاين' : 'سنتر',
-      g.subscription_type === 'monthly' ? 'شهري' : 'بالحصة',
+      g.subscription_type === 'monthly' ? fmtMoney(g.monthly_price) : fmtMoney(g.session_price),
       studentCounts[g.id] || 0,
     ])
     downloadCSV({
       filename: `كشف-المجاميع-${new Date().toISOString().slice(0, 10)}`,
-      headers: ['م', 'اسم المجموعة', 'الأيام', 'تاريخ البدء', 'النوع', 'الاشتراك', 'عدد الطلاب'],
+      headers: ['م', 'اسم المجموعة', 'الأيام', 'السعر', 'عدد الطلاب'],
       rows,
     })
     toast('تم تصدير كشف المجاميع')
@@ -169,8 +175,15 @@ export default function GroupsPage() {
     setPrintOpen(true)
   }
 
-  const printColumns = ['م', 'اسم المجموعة', 'الأيام', 'النوع', 'عدد الطلاب', 'التوقيع']
-  const printRows = groups.map((g, i) => [i + 1, g.group_name, g.days || '-', g.type === 'online' ? 'أونلاين' : 'سنتر', studentCounts[g.id] || 0, ''])
+  const printColumns = ['م', 'اسم المجموعة', 'الأيام', 'السعر والنوع', 'عدد الطلاب', 'التوقيع']
+  const printRows = groups.map((g, i) => [
+    i + 1, 
+    g.group_name, 
+    g.days || '-', 
+    g.subscription_type === 'monthly' ? `شهري: ${fmtMoney(g.monthly_price)}` : `حصة: ${fmtMoney(g.session_price)}`, 
+    studentCounts[g.id] || 0, 
+    ''
+  ])
 
   if (loading) {
     return (
@@ -185,7 +198,7 @@ export default function GroupsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-extrabold text-slate-800">المجاميع</h1>
-          <p className="mt-1 text-sm text-slate-500">أنشئ مجاميعك وحدّد تفاصيل المواعيد ونمط التعليم</p>
+          <p className="mt-1 text-sm text-slate-500">أنشئ مجاميعك وحدّد مواعيد الحصص والأسعار ونمط التعليم</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button onClick={exportExcel} className="btn-outline">
@@ -242,10 +255,16 @@ export default function GroupsPage() {
                       {g.days && (
                         <p className="text-xs text-slate-500 mt-0.5">🗓️ {g.days} {g.time ? `— ${g.time}` : ''}</p>
                       )}
-                      <p className="flex items-center gap-1 text-xs font-semibold text-slate-400 mt-1">
-                        <Users className="h-3.5 w-3.5" />
-                        {studentCounts[g.id] || 0} طالب • {g.subscription_type === 'monthly' ? 'اشتراك شهري' : 'بالحصة'}
-                      </p>
+                      <div className="mt-1 flex items-center gap-2 text-xs font-semibold text-slate-500">
+                        <span className="flex items-center gap-1">
+                          <Users className="h-3.5 w-3.5" />
+                          {studentCounts[g.id] || 0} طالب
+                        </span>
+                        <span>•</span>
+                        <span className="font-bold text-primary-600">
+                          {g.subscription_type === 'monthly' ? `شهري: ${fmtMoney(g.monthly_price)}` : `حصة: ${fmtMoney(g.session_price)}`}
+                        </span>
+                      </div>
                     </div>
                   </div>
                   <div className="flex gap-1">
@@ -380,7 +399,7 @@ export default function GroupsPage() {
             </div>
 
             <div>
-              <label className="label font-bold text-slate-700">نظام الاشتراك</label>
+              <label className="label font-bold text-slate-700">نظام الاشتراك والأسعار</label>
               <div className="grid grid-cols-2 gap-3 mt-1">
                 <button
                   type="button"
@@ -407,15 +426,38 @@ export default function GroupsPage() {
               </div>
             </div>
 
-            {subscriptionType === 'monthly' && (
+            {subscriptionType === 'monthly' ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="label">عدد حصص الشهر</label>
+                  <input
+                    type="number"
+                    className="input text-center font-extrabold text-lg"
+                    value={sessionsPerMonth}
+                    onChange={(e) => setSessionsPerMonth(e.target.value)}
+                    min={1}
+                  />
+                </div>
+                <div>
+                  <label className="label">سعر الشهر (ج.م)</label>
+                  <input
+                    type="number"
+                    className="input text-center font-extrabold text-lg text-emerald-600"
+                    value={monthlyPrice}
+                    onChange={(e) => setMonthlyPrice(e.target.value)}
+                    min={0}
+                  />
+                </div>
+              </div>
+            ) : (
               <div>
-                <label className="label">عدد حصص الشهر</label>
+                <label className="label">سعر الحصة الواحدة (ج.م)</label>
                 <input
                   type="number"
-                  className="input text-center font-extrabold text-lg"
-                  value={sessionsPerMonth}
-                  onChange={(e) => setSessionsPerMonth(e.target.value)}
-                  min={1}
+                  className="input text-center font-extrabold text-lg text-pink-600"
+                  value={sessionPrice}
+                  onChange={(e) => setSessionPrice(e.target.value)}
+                  min={0}
                 />
               </div>
             )}
@@ -461,7 +503,7 @@ export default function GroupsPage() {
       <PrintReport
         open={printOpen}
         onClose={() => setPrintOpen(false)}
-        title="كشف المجاميع"
+        title="كشف المجاميع والأسعار"
         subtitle={`عدد المجاميع: ${groups.length} — إجمالي الطلاب: ${studentsForPrint.length}`}
         teacherName={profile?.full_name || 'المعلم'}
         columns={printColumns}
