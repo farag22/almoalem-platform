@@ -114,9 +114,9 @@ export default function AttendancePage() {
           .update({ status })
           .eq('id', existing.data.id)
         if (error) {
-          console.error('Update attendance error:', error)
+          console.error('Supabase Update Error:', error)
+          toast(`خطأ التحديث: ${error.message}`, 'error')
           setRecords((r) => ({ ...r, [student.id]: previous }))
-          toast('تعذر التحديث', 'error')
         } else {
           toast(`تم تسجيل «${ATTENDANCE_STATUS[status].label}»`)
         }
@@ -132,15 +132,15 @@ export default function AttendancePage() {
         }
         const { error } = await supabase.from('attendance').insert([payload])
         if (error) {
-          console.error('Insert attendance error:', error)
+          console.error('Supabase Insert Error:', error)
+          toast(`خطأ التسجيل: ${error.message}`, 'error')
           setRecords((r) => ({ ...r, [student.id]: previous }))
-          toast('تعذر التسجيل', 'error')
         } else {
           toast(`تم تسجيل «${ATTENDANCE_STATUS[status].label}»`)
         }
       }
     } catch (err) {
-      console.error('Mark attendance exception:', err)
+      console.error('Unexpected Error:', err)
       setRecords((r) => ({ ...r, [student.id]: previous }))
     } finally {
       setSavingKey(null)
