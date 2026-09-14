@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Plus, Pencil, Trash2, Search, Users, Copy, Check, Phone, KeyRound, FileSpreadsheet, Printer, ClipboardList } from 'lucide-react'
+import { Plus, Pencil, Trash2, Search, Users, Copy, Check, Phone, KeyRound, FileSpreadsheet, Printer, ClipboardList, CheckCircle2, XCircle, Wallet } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../components/ui/Toast'
@@ -18,6 +18,7 @@ export default function StudentsPage() {
   const [students, setStudents] = useState([])
   const [groups, setGroups] = useState([])
   const [payments, setPayments] = useState([])
+  const [attendanceMap, setAttendanceMap] = useState({})
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [groupFilter, setGroupFilter] = useState('all')
@@ -36,7 +37,6 @@ export default function StudentsPage() {
     if (!teacherId) return
     setLoading(true)
     try {
-      // جلب الطلاب والمجموعات بشكل منفصل ومستقل لمنع أي مشاكل في الـ Relations
       const [sRes, gRes] = await Promise.all([
         supabase
           .from('students')
@@ -54,18 +54,27 @@ export default function StudentsPage() {
       const groupList = gRes.data ?? []
 
       let pRes = []
+      let attMap = {}
       if (studentList.length > 0) {
         const studentIds = studentList.map((s) => s.id)
-        const { data: paymentsData } = await supabase
-          .from('payments')
-          .select('student_id, amount, is_paid')
-          .in('student_id', studentIds)
-        pRes = paymentsData ?? []
+        const [paymentsData, attData] = await Promise.all([
+          supabase.from('payments').select('student_id, amount, is_paid').in('student_id', studentIds),
+          supabase.from('attendance').select('student_id, status, date').in('student_id', studentIds).order('date', { ascending: false }),
+        ])
+        pRes = paymentsData.data ?? []
+        
+        // احفظ أحدث حالة حضور لكل طالب
+        attData.data?.forEach((att) => {
+          if (!attMap[att.student_id]) {
+            attMap[att.student_id] = att.status // 'present' أو 'absent'
+          }
+        })
       }
 
       setStudents(studentList)
       setGroups(groupList)
       setPayments(pRes)
+      setAttendanceMap(attMap)
     } catch (err) {
       console.error('Error loading students:', err)
       toast('تعذر تحميل بيانات الطلاب', 'error')
@@ -198,11 +207,12 @@ export default function StudentsPage() {
 
   const groupById = (id) => groups.find((g) => g.id === id)
 
-  const remainingFor = (studentId) => {
+  const paymentStatsFor = (studentId) => {
     const ps = payments.filter((p) => p.student_id === studentId)
     const total = ps.reduce((x, p) => x + Number(p.amount || 0), 0)
     const paid = ps.reduce((x, p) => x + (p.is_paid ? Number(p.amount || 0) : 0), 0)
-    return Math.max(0, total - paid)
+    const remaining = Math.max(0, total - paid)
+    return { total, paid, remaining }
   }
 
   const groupNameFor = (s) => groupById(s.group_id)?.group_name || 'بدون مجموعة'
@@ -249,7 +259,7 @@ export default function StudentsPage() {
         <div>
           <h1 className="text-xl font-extrabold text-slate-800 md:text-2xl">الطلاب</h1>
           <p className="mt-0.5 text-xs text-slate-500 md:text-sm">
-            إدارة الطلاب، أكواد أولياء الأمور، وأرقام الموبايل
+            إدارة الطلاب، أكواد أولياء الأمور، ومتابعة الحضور والمصاريف
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -309,9 +319,10 @@ export default function StudentsPage() {
         <div className="flex flex-col gap-2 md:hidden">
           {filtered.map((s) => {
             const grp = groupById(s.group_id)
-            const remaining = remainingFor(s.id)
+            const { total, paid, remaining } = paymentStatsFor(s.id)
+            const attStatus = attendanceMap[s.id]
             return (
-              <div key={s.id} className="card p-3">
+              <div key={s.id} className="card p-3 space-y-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex min-w-0 items-center gap-2.5">
                     <span
@@ -322,14 +333,29 @@ export default function StudentsPage() {
                     </span>
                     <div className="min-w-0">
                       <p className="truncate text-sm font-bold text-slate-700">{s.student_name}</p>
-                      <div className="mt-1 flex items-center gap-1.5">
+                      <div className="mt-1 flex items-center gap-1.5 flex-wrap">
                         {grp ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-600">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
                             <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: grp.color_code }} />
                             {grp.group_name}
                           </span>
                         ) : (
-                          <span className="text-[11px] text-slate-400">بدون مجموعة</span>
+                          <span className="text-[10px] text-slate-400">بدون مجموعة</span>
+                        )}
+
+                        {/* حالة الحضور */}
+                        {attStatus === 'present' ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                            <CheckCircle2 className="h-3 w-3" /> حاضر
+                          </span>
+                        ) : attStatus === 'absent' ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-700">
+                            <XCircle className="h-3 w-3" /> غائب
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
+                            لم يسجل
+                          </span>
                         )}
                       </div>
                     </div>
@@ -352,7 +378,22 @@ export default function StudentsPage() {
                   </div>
                 </div>
 
-                <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-slate-100 pt-2.5">
+                {/* نسبة المصروفات */}
+                <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 text-xs font-bold">
+                  <span className="flex items-center gap-1.5 text-slate-600">
+                    <Wallet className="h-4 w-4 text-slate-400" />
+                    المصروفات:
+                  </span>
+                  {total === 0 ? (
+                    <span className="text-slate-400">لا توجد مطالبات</span>
+                  ) : remaining === 0 ? (
+                    <span className="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">مدفوع بالكامل ({fmtMoney(paid)})</span>
+                  ) : (
+                    <span className="text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">متبقي: {fmtMoney(remaining)}</span>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-slate-100 pt-2.5">
                   <div className="flex min-w-0 items-center gap-1.5 text-xs text-slate-500">
                     <KeyRound className="h-3.5 w-3.5 shrink-0 text-slate-400" />
                     <code className="truncate rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[11px]" dir="ltr">
@@ -407,11 +448,13 @@ export default function StudentsPage() {
       {filtered.length > 0 && (
         <div className="card hidden overflow-hidden md:block">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px]">
+            <table className="w-full min-w-[850px]">
               <thead className="border-b border-slate-100 bg-slate-50">
                 <tr>
                   <th className="th">الطالب</th>
                   <th className="th">المجموعة</th>
+                  <th className="th">حضور آخر حصة</th>
+                  <th className="th">حالة المصروفات</th>
                   <th className="th">كود ولي الأمر</th>
                   <th className="th">رقم الموبايل</th>
                   <th className="th">إجراءات</th>
@@ -420,6 +463,8 @@ export default function StudentsPage() {
               <tbody className="divide-y divide-slate-50">
                 {filtered.map((s) => {
                   const grp = groupById(s.group_id)
+                  const { total, paid, remaining } = paymentStatsFor(s.id)
+                  const attStatus = attendanceMap[s.id]
                   return (
                     <tr key={s.id} className="transition hover:bg-slate-50/60">
                       <td className="td">
@@ -441,6 +486,32 @@ export default function StudentsPage() {
                           </span>
                         ) : (
                           <span className="text-xs text-slate-400">بدون مجموعة</span>
+                        )}
+                      </td>
+                      <td className="td">
+                        {attStatus === 'present' ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
+                            <CheckCircle2 className="h-3.5 w-3.5" /> حاضر
+                          </span>
+                        ) : attStatus === 'absent' ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-700">
+                            <XCircle className="h-3.5 w-3.5" /> غائب
+                          </span>
+                        ) : (
+                          <span className="text-xs text-slate-400">لم يسجل</span>
+                        )}
+                      </td>
+                      <td className="td">
+                        {total === 0 ? (
+                          <span className="text-xs text-slate-400">لا توجد مطالبات</span>
+                        ) : remaining === 0 ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
+                            مدفوع ({fmtMoney(paid)})
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700">
+                            متبقي: {fmtMoney(remaining)}
+                          </span>
                         )}
                       </td>
                       <td className="td">
@@ -470,14 +541,14 @@ export default function StudentsPage() {
                         ) : (
                           <span className="text-xs text-slate-400">—</span>
                         )}
-                        {s.parent_phone && remainingFor(s.id) > 0 && (
+                        {s.parent_phone && remaining > 0 && (
                           <span className="mt-1.5 flex items-center justify-center gap-2">
                             <a
                               href={waLink(
                                 s.parent_phone,
                                 paymentReminderMsg({
                                   studentName: s.student_name,
-                                  amount: fmtMoney(remainingFor(s.id)),
+                                  amount: fmtMoney(remaining),
                                   teacherName: profile?.full_name || 'المعلم',
                                 }),
                               )}
@@ -577,9 +648,6 @@ export default function StudentsPage() {
                 توليد
               </button>
             </div>
-            <p className="mt-1.5 text-xs text-slate-400">
-              سلّم هذا الكود لولي الأمر للدخول على المنصة بمشاهدة قراءة فقط
-            </p>
           </div>
 
           <div>
