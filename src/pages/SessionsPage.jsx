@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useRef } from 'react'
-import { Calendar, QrCode, Search, CheckCircle2, XCircle, Users, Camera, StopCircle } from 'lucide-react'
+import { Calendar, QrCode, Search, CheckCircle2, XCircle, Users, Camera } from 'lucide-react'
 import { Html5Qrcode } from 'html5-qrcode'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -19,6 +19,7 @@ export default function SessionsPage() {
   const [scannerOpen, setScannerOpen] = useState(false)
   const [manualCode, setManualCode] = useState('')
   const html5QrCodeRef = useRef(null)
+  const lastScannedRef = useRef({ code: '', time: 0 })
 
   const todayStr = new Date().toISOString().slice(0, 10)
 
@@ -67,31 +68,38 @@ export default function SessionsPage() {
     }
   }, [teacherId])
 
-  // فتح الكاميرا الخلفية تلقائياً عند فتح النافذة
   useEffect(() => {
     let qrInstance = null
 
     if (scannerOpen) {
-      // إعطاء فرصة لعنصر الـ DOM للظهور قبل تشغيل الكاميرا
       const timer = setTimeout(() => {
         qrInstance = new Html5Qrcode('qr-reader-container')
         html5QrCodeRef.current = qrInstance
 
         qrInstance
           .start(
-            { facingMode: 'environment' }, // طلب الكاميرا الخلفية مباشرة
+            { facingMode: 'environment' },
             {
-              fps: 15,
+              fps: 10,
               qrbox: { width: 250, height: 250 },
             },
-            (decodedText) => {
-              handleScannedCode(decodedText)
+            async (decodedText) => {
+              const now = Date.now()
+              // منع تكرار قراءة نفس الكود لفترة 10 ثوانٍ أو إيقاف الكاميرا فورا
+              if (
+                lastScannedRef.current.code === decodedText &&
+                now - lastScannedRef.current.time < 10000
+              ) {
+                return
+              }
+              lastScannedRef.current = { code: decodedText, time: now }
+              await handleScannedCode(decodedText)
             },
             () => {}
           )
           .catch((err) => {
             console.error('Camera error:', err)
-            toast('تعذر فتح الكاميرا. تأكد من إعطاء الصلاحيات للمتصفح.', 'error')
+            toast('تعذر فتح الكاميرا. تأكد من إعطاء الصلاحيات.', 'error')
           })
       }, 300)
 
@@ -115,7 +123,7 @@ export default function SessionsPage() {
     }
   }
 
-  const handleScannedCode = (code) => {
+  const handleScannedCode = async (code) => {
     const cleanCode = code.trim().toLowerCase()
     const student = students.find(
       (s) =>
@@ -126,7 +134,7 @@ export default function SessionsPage() {
       toast(`لم يتم التعرف على الكود: ${code}`, 'error')
       return
     }
-    markAttendance(student.id, 'present')
+    await markAttendance(student.id, 'present')
     toast(`تم تسجيل حضور: ${student.student_name}`)
   }
 
@@ -169,12 +177,12 @@ export default function SessionsPage() {
     }
   }
 
-  const handleManualScan = () => {
+  const handleManualScan = async () => {
     if (!manualCode.trim()) {
       toast('أدخل كود الطالب', 'error')
       return
     }
-    handleScannedCode(manualCode)
+    await handleScannedCode(manualCode)
     setManualCode('')
   }
 
@@ -202,7 +210,7 @@ export default function SessionsPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-extrabold text-slate-800">إدارة الحضور بـ QR Code</h1>
-          <p className="mt-1 text-sm text-slate-500">امسح الكود بالكاميرا الخلفية لتسجيل حضور حصة اليوم ({todayStr})</p>
+          <p className="mt-1 text-sm text-slate-500">امسح الكود بالكاميرا لتسجيل حضور حصة اليوم ({todayStr})</p>
         </div>
         <button
           onClick={() => setScannerOpen(true)}
@@ -212,7 +220,6 @@ export default function SessionsPage() {
         </button>
       </div>
 
-      {/* Filters */}
       <div className="card flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
@@ -237,7 +244,6 @@ export default function SessionsPage() {
         </select>
       </div>
 
-      {/* Students list */}
       {filteredStudents.length === 0 ? (
         <div className="card flex flex-col items-center justify-center gap-3 py-16 text-center">
           <Users className="h-12 w-12 text-slate-300" />
@@ -280,8 +286,8 @@ export default function SessionsPage() {
 
                 <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
                   <button
-                    onClick={() => {
-                      markAttendance(s.id, 'present')
+                    onClick={async () => {
+                      await markAttendance(s.id, 'present')
                       toast('تم تسجيل الحضور بنجاح')
                     }}
                     className={`flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-bold transition ${
@@ -293,8 +299,8 @@ export default function SessionsPage() {
                     <CheckCircle2 className="h-4 w-4" /> حاضر
                   </button>
                   <button
-                    onClick={() => {
-                      markAttendance(s.id, 'absent')
+                    onClick={async () => {
+                      await markAttendance(s.id, 'absent')
                       toast('تم تسجيل الغياب')
                     }}
                     className={`flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-bold transition ${
@@ -312,7 +318,6 @@ export default function SessionsPage() {
         </div>
       )}
 
-      {/* Camera Scanner Modal */}
       <Modal
         open={scannerOpen}
         onClose={async () => {
@@ -346,8 +351,8 @@ export default function SessionsPage() {
                 value={manualCode}
                 onChange={(e) => setManualCode(e.target.value)}
                 placeholder="std-xxxxxx"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleManualScan()
+                onKeyDown={async (e) => {
+                  if (e.key === 'Enter') await handleManualScan()
                 }}
               />
               <button onClick={handleManualScan} className="btn-primary">
