@@ -18,9 +18,16 @@ export default function GroupsPage() {
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState(null)
+  
+  // الحقول الجديدة للمجموعة
   const [name, setName] = useState('')
+  const [days, setDays] = useState('')
+  const [time, setTime] = useState('')
+  const [groupType, setGroupType] = useState('center') // center or online
+  const [subscriptionType, setSubscriptionType] = useState('monthly') // monthly or per_session
+  const [sessionsPerMonth, setSessionsPerMonth] = useState(8)
   const [color, setColor] = useState(GROUP_COLORS[0].value)
-  const [groupType, setGroupType] = useState('center') // center أو online
+
   const [saving, setSaving] = useState(false)
   const [printOpen, setPrintOpen] = useState(false)
   const [studentsForPrint, setStudentsForPrint] = useState([])
@@ -53,16 +60,24 @@ export default function GroupsPage() {
   const openCreate = () => {
     setEditing(null)
     setName('')
-    setColor(GROUP_COLORS[0].value)
+    setDays('')
+    setTime('')
     setGroupType('center')
+    setSubscriptionType('monthly')
+    setSessionsPerMonth(8)
+    setColor(GROUP_COLORS[0].value)
     setModalOpen(true)
   }
 
   const openEdit = (g) => {
     setEditing(g)
-    setName(g.group_name)
-    setColor(g.color_code)
+    setName(g.group_name || '')
+    setDays(g.days || '')
+    setTime(g.time || '')
     setGroupType(g.type || 'center')
+    setSubscriptionType(g.subscription_type || 'monthly')
+    setSessionsPerMonth(g.sessions_per_month || 8)
+    setColor(g.color_code || GROUP_COLORS[0].value)
     setModalOpen(true)
   }
 
@@ -72,20 +87,31 @@ export default function GroupsPage() {
       return
     }
     setSaving(true)
+    const payload = {
+      teacher_id: teacherId,
+      group_name: name.trim(),
+      days: days.trim(),
+      time: time.trim(),
+      type: groupType,
+      subscription_type: subscriptionType,
+      sessions_per_month: Number(sessionsPerMonth) || 8,
+      color_code: color,
+    }
+
     if (editing) {
       const { error } = await supabase
         .from('groups')
-        .update({ group_name: name.trim(), color_code: color, type: groupType })
+        .update(payload)
         .eq('id', editing.id)
         .eq('teacher_id', teacherId)
       if (error) toast('تعذر تعديل المجموعة', 'error')
-      else toast('تم تعديل المجموعة')
+      else toast('تم تعديل المجموعة بنجاح')
     } else {
       const { error } = await supabase
         .from('groups')
-        .insert({ teacher_id: teacherId, group_name: name.trim(), color_code: color, type: groupType })
+        .insert(payload)
       if (error) toast('تعذر إنشاء المجموعة', 'error')
-      else toast('تم إنشاء المجموعة')
+      else toast('تم إنشاء المجموعة بنجاح')
     }
     setSaving(false)
     setModalOpen(false)
@@ -105,10 +131,17 @@ export default function GroupsPage() {
   }
 
   const exportExcel = () => {
-    const rows = groups.map((g, i) => [i + 1, g.group_name, g.type === 'online' ? 'أونلاين' : 'سنتر', studentCounts[g.id] || 0, g.color_code])
+    const rows = groups.map((g, i) => [
+      i + 1,
+      g.group_name,
+      g.days || '-',
+      g.type === 'online' ? 'أونلاين' : 'سنتر',
+      g.subscription_type === 'monthly' ? 'شهري' : 'بالحصة',
+      studentCounts[g.id] || 0,
+    ])
     downloadCSV({
       filename: `كشف-المجاميع-${new Date().toISOString().slice(0, 10)}`,
-      headers: ['م', 'اسم المجموعة', 'النوع', 'عدد الطلاب', 'اللون'],
+      headers: ['م', 'اسم المجموعة', 'الأيام', 'النوع', 'الاشتراك', 'عدد الطلاب'],
       rows,
     })
     toast('تم تصدير كشف المجاميع')
@@ -124,8 +157,8 @@ export default function GroupsPage() {
     setPrintOpen(true)
   }
 
-  const printColumns = ['م', 'اسم المجموعة', 'النوع', 'عدد الطلاب', 'التوقيع']
-  const printRows = groups.map((g, i) => [i + 1, g.group_name, g.type === 'online' ? 'أونلاين' : 'سنتر', studentCounts[g.id] || 0, ''])
+  const printColumns = ['م', 'اسم المجموعة', 'الأيام', 'النوع', 'عدد الطلاب', 'التوقيع']
+  const printRows = groups.map((g, i) => [i + 1, g.group_name, g.days || '-', g.type === 'online' ? 'أونلاين' : 'سنتر', studentCounts[g.id] || 0, ''])
 
   if (loading) {
     return (
@@ -140,7 +173,7 @@ export default function GroupsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-extrabold text-slate-800">المجاميع</h1>
-          <p className="mt-1 text-sm text-slate-500">أنشئ مجاميعك وحدّد لوناً ونوعاً لكل مجموعة</p>
+          <p className="mt-1 text-sm text-slate-500">أنشئ مجاميعك وحدّد تفاصيل المواعيد ونمط التعليم</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button onClick={exportExcel} className="btn-outline">
@@ -194,9 +227,12 @@ export default function GroupsPage() {
                           {g.type === 'online' ? 'أونلاين' : 'سنتر'}
                         </span>
                       </div>
+                      {g.days && (
+                        <p className="text-xs text-slate-500 mt-0.5">🗓️ {g.days} {g.time ? `— ${g.time}` : ''}</p>
+                      )}
                       <p className="flex items-center gap-1 text-xs font-semibold text-slate-400 mt-1">
                         <Users className="h-3.5 w-3.5" />
-                        {studentCounts[g.id] || 0} طالب
+                        {studentCounts[g.id] || 0} طالب • {g.subscription_type === 'monthly' ? 'اشتراك شهري' : 'بالحصة'}
                       </p>
                     </div>
                   </div>
@@ -228,19 +264,20 @@ export default function GroupsPage() {
         </div>
       )}
 
+      {/* Modal إضافة وتعديل المجموعة */}
       <Modal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         title={editing ? 'تعديل المجموعة' : 'مجموعة جديدة'}
         footer={
-          <>
+          <div className="flex w-full justify-end gap-2">
             <button onClick={() => setModalOpen(false)} className="btn-outline">
               إلغاء
             </button>
             <button onClick={save} disabled={saving} className="btn-primary">
               {saving ? <Spinner size="h-5 w-5" /> : 'حفظ'}
             </button>
-          </>
+          </div>
         }
       >
         <div className="space-y-4">
@@ -250,41 +287,106 @@ export default function GroupsPage() {
               className="input"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="مثال: المجموعة الأولى"
+              placeholder="مثال: أولى ثانوي"
               autoFocus
             />
           </div>
+
           <div>
-            <label className="label">نوع المجموعة</label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setGroupType('center')}
-                className={`flex items-center justify-center gap-2 rounded-xl border-2 p-3 text-sm font-bold transition ${
-                  groupType === 'center'
-                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                <MapPin className="h-4 w-4" />
-                سنتر
-              </button>
-              <button
-                type="button"
-                onClick={() => setGroupType('online')}
-                className={`flex items-center justify-center gap-2 rounded-xl border-2 p-3 text-sm font-bold transition ${
-                  groupType === 'online'
-                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
-                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                <Globe className="h-4 w-4" />
-                أونلاين
-              </button>
-            </div>
+            <label className="label">أيام الحصة في الأسبوع</label>
+            <input
+              className="input"
+              value={days}
+              onChange={(e) => setDays(e.target.value)}
+              placeholder="مثال: السبت والأربعاء"
+            />
           </div>
+
           <div>
-            <label className="label">لون المجموعة</label>
+            <label className="label">وقت بدء الحصة</label>
+            <input
+              className="input"
+              value={time}
+              onChange={(e) => setTime(e.target.value)}
+              placeholder="مثال: 04:00 مساءً"
+            />
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 p-4 space-y-4 bg-slate-50/50">
+            <div>
+              <label className="label font-bold text-slate-700">نمط التعليم</label>
+              <div className="grid grid-cols-2 gap-3 mt-1">
+                <button
+                  type="button"
+                  onClick={() => setGroupType('online')}
+                  className={`flex items-center justify-center gap-2 rounded-xl border-2 p-2.5 text-sm font-bold transition ${
+                    groupType === 'online'
+                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                      : 'border-slate-200 bg-white text-slate-600'
+                  }`}
+                >
+                  <Globe className="h-4 w-4" />
+                  أونلاين 💻
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setGroupType('center')}
+                  className={`flex items-center justify-center gap-2 rounded-xl border-2 p-2.5 text-sm font-bold transition ${
+                    groupType === 'center'
+                      ? 'border-primary-500 bg-primary-50 text-primary-700'
+                      : 'border-slate-200 bg-white text-slate-600'
+                  }`}
+                >
+                  <MapPin className="h-4 w-4" />
+                  سنتر 🏫
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="label font-bold text-slate-700">نظام الاشتراك</label>
+              <div className="grid grid-cols-2 gap-3 mt-1">
+                <button
+                  type="button"
+                  onClick={() => setSubscriptionType('per_session')}
+                  className={`flex items-center justify-center gap-2 rounded-xl border-2 p-2.5 text-sm font-bold transition ${
+                    subscriptionType === 'per_session'
+                      ? 'border-pink-500 bg-pink-50 text-pink-700'
+                      : 'border-slate-200 bg-white text-slate-600'
+                  }`}
+                >
+                  🎟️ بالحصة
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSubscriptionType('monthly')}
+                  className={`flex items-center justify-center gap-2 rounded-xl border-2 p-2.5 text-sm font-bold transition ${
+                    subscriptionType === 'monthly'
+                      ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                      : 'border-slate-200 bg-white text-slate-600'
+                  }`}
+                >
+                  📅 شهري
+                </button>
+              </div>
+            </div>
+
+            {subscriptionType === 'monthly' && (
+              <div>
+                <label className="label">عدد حصص الشهر</label>
+                <input
+                  type="number"
+                  className="input text-center font-bold"
+                  value={sessionsPerMonth}
+                  onChange={(e) => setSessionsPerMonth(e.target.value)}
+                  min={1}
+                />
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="label">لون مميز للمجموعة</label>
             <div className="flex flex-wrap gap-3">
               {GROUP_COLORS.map((c) => (
                 <button
