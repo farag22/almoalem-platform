@@ -43,10 +43,10 @@ export default function ParentView() {
     setLoading(true)
     setData(null)
 
-    // البحث المباشر المطابق للكود المدخل لضمان العثور على الطالب بدقة
+    // جلب الطلاب مباشرة بدون ربط معقد لتجنب أخطاء الصلاحيات
     const { data: students, error: err } = await supabase
       .from('students')
-      .select('*, groups(group_name, color_code), teachers(full_name)')
+      .select('*')
 
     if (err || !students) {
       setError('حدث خطأ أثناء الاتصال بقاعدة البيانات')
@@ -54,11 +54,10 @@ export default function ParentView() {
       return
     }
 
-    // مطابقة الكود بغض النظر عن المسافات أو حالة الحروف
     const student = students.find(
       (s) => 
-        String(s.student_code).trim().toLowerCase() === code.toLowerCase() ||
-        String(s.id).trim().toLowerCase() === code.toLowerCase()
+        String(s.student_code ?? '').trim().toLowerCase() === code.toLowerCase() ||
+        String(s.id ?? '').trim().toLowerCase() === code.toLowerCase()
     )
 
     if (!student) {
@@ -88,9 +87,9 @@ export default function ParentView() {
     setSearchedCode(code)
     setData({
       ...student,
-      group_name: student.groups?.group_name || 'بدون مجموعة',
-      group_color: student.groups?.color_code || '#2547eb',
-      teacher_name: student.teachers?.full_name || 'المعلم',
+      group_name: 'المجموعة الدراسية',
+      group_color: '#2547eb',
+      teacher_name: 'المعلم',
       attendance: att.data ?? [],
       payments: pay.data ?? [],
       evaluations: (evals.data ?? []).map((e) => ({
@@ -216,9 +215,6 @@ export default function ParentView() {
                         style={{ backgroundColor: data.group_color || '#2547eb' }}
                       >
                         {data.group_name}
-                      </span>
-                      <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">
-                        {data.teacher_name}
                       </span>
                     </div>
                     <p className="mt-2 text-[11px] font-bold tracking-wider text-slate-400" dir="ltr">
