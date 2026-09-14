@@ -11,6 +11,7 @@ import {
   Menu,
   X,
   Phone,
+  Calendar,
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { ToastProvider } from '../ui/Toast'
@@ -22,6 +23,7 @@ const NAV = [
   { to: '/dashboard/students', label: 'الطلاب', icon: Users },
   { to: '/dashboard/attendance', label: 'الحضور والغياب', icon: CalendarCheck },
   { to: '/dashboard/payments', label: 'المصاريف والمدفوعات', icon: Wallet },
+  { to: '/dashboard/sessions', label: 'الحصص والمواعيد', icon: Calendar },
 ]
 
 function SidebarContent({ onNavigate }) {
