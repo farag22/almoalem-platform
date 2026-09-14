@@ -43,10 +43,11 @@ export default function ParentView() {
     setLoading(true)
     setData(null)
 
+    // البحث بمرونة أكبر (يطابق الكود بغض النظر عن حالة الحروف الكبيرة/الصغيرة)
     const { data: student, error: err } = await supabase
       .from('students')
       .select('*, groups(group_name, color_code), teachers(full_name)')
-      .eq('student_code', code)
+      .or(`student_code.ilike.${code},id.eq.${code}`)
       .maybeSingle()
 
     if (err || !student) {
