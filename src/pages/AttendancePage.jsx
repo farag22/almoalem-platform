@@ -107,25 +107,40 @@ export default function AttendancePage() {
         .eq('student_id', student.id)
         .eq('session_date', date)
         .maybeSingle()
+
       if (existing.data) {
         const { error } = await supabase
           .from('attendance')
           .update({ status })
           .eq('id', existing.data.id)
         if (error) {
+          console.error('Update attendance error:', error)
           setRecords((r) => ({ ...r, [student.id]: previous }))
           toast('تعذر التحديث', 'error')
-        } else toast(`تم تسجيل «${ATTENDANCE_STATUS[status].label}»`)
+        } else {
+          toast(`تم تسجيل «${ATTENDANCE_STATUS[status].label}»`)
+        }
       } else {
-        const { error } = await supabase
-          .from('attendance')
-          .insert({ student_id: student.id, session_date: date, status })
+        const payload = {
+          student_id: student.id,
+          session_date: date,
+          date: date,
+          status,
+          teacher_id: teacherId,
+          user_id: teacherId,
+          group_id: student.group_id || null,
+        }
+        const { error } = await supabase.from('attendance').insert([payload])
         if (error) {
+          console.error('Insert attendance error:', error)
           setRecords((r) => ({ ...r, [student.id]: previous }))
           toast('تعذر التسجيل', 'error')
-        } else toast(`تم تسجيل «${ATTENDANCE_STATUS[status].label}»`)
+        } else {
+          toast(`تم تسجيل «${ATTENDANCE_STATUS[status].label}»`)
+        }
       }
-    } catch {
+    } catch (err) {
+      console.error('Mark attendance exception:', err)
       setRecords((r) => ({ ...r, [student.id]: previous }))
     } finally {
       setSavingKey(null)
@@ -144,13 +159,23 @@ export default function AttendancePage() {
         .eq('student_id', s.id)
         .eq('session_date', date)
         .maybeSingle()
+
       if (existing.data) {
         await supabase.from('attendance').update({ status }).eq('id', existing.data.id)
       } else {
-        await supabase.from('attendance').insert({ student_id: s.id, session_date: date, status })
+        await supabase.from('attendance').insert([{
+          student_id: s.id,
+          session_date: date,
+          date: date,
+          status,
+          teacher_id: teacherId,
+          user_id: teacherId,
+          group_id: s.group_id || null,
+        }])
       }
     }
     toast(`تم تسجيل ${filteredStudents.length} طالب كـ«${ATTENDANCE_STATUS[status].label}»`)
+    load()
   }
 
   const shiftDay = (delta) => {
