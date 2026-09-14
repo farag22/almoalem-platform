@@ -36,7 +36,6 @@ export default function StudentsPage() {
     if (!teacherId) return
     setLoading(true)
     try {
-      // جلب الطلاب والمجموعات بشكل مباشر وموثوق
       const [sRes, gRes] = await Promise.all([
         supabase
           .from('students')
@@ -602,7 +601,7 @@ export default function StudentsPage() {
       </Modal>
 
       <QuickGradingModal
-        open={gradingOn} // تم اصلاحها إلى gradingOpen في الكود المحدث
+        open={gradingOpen}
         onClose={() => setGradingOpen(false)}
         teacherId={teacherId}
         groups={groups}
