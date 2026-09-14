@@ -22,6 +22,7 @@ export default function GroupsPage() {
   const [name, setName] = useState('')
   const [days, setDays] = useState('')
   const [time, setTime] = useState('')
+  const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [groupType, setGroupType] = useState('center')
   const [subscriptionType, setSubscriptionType] = useState('monthly')
   const [sessionsPerMonth, setSessionsPerMonth] = useState(8)
@@ -61,6 +62,7 @@ export default function GroupsPage() {
     setName('')
     setDays('')
     setTime('')
+    setStartDate(new Date().toISOString().slice(0, 10))
     setGroupType('center')
     setSubscriptionType('monthly')
     setSessionsPerMonth(8)
@@ -73,6 +75,7 @@ export default function GroupsPage() {
     setName(g.group_name || '')
     setDays(g.days || '')
     setTime(g.time || '')
+    setStartDate(g.start_date || new Date().toISOString().slice(0, 10))
     setGroupType(g.type || 'center')
     setSubscriptionType(g.subscription_type || 'monthly')
     setSessionsPerMonth(g.sessions_per_month || 8)
@@ -91,6 +94,7 @@ export default function GroupsPage() {
       group_name: name.trim(),
       days: days.trim(),
       time: time.trim(),
+      start_date: startDate,
       type: groupType,
       subscription_type: subscriptionType,
       sessions_per_month: Number(sessionsPerMonth) || 8,
@@ -134,13 +138,14 @@ export default function GroupsPage() {
       i + 1,
       g.group_name,
       g.days || '-',
+      g.start_date || '-',
       g.type === 'online' ? 'أونلاين' : 'سنتر',
       g.subscription_type === 'monthly' ? 'شهري' : 'بالحصة',
       studentCounts[g.id] || 0,
     ])
     downloadCSV({
       filename: `كشف-المجاميع-${new Date().toISOString().slice(0, 10)}`,
-      headers: ['م', 'اسم المجموعة', 'الأيام', 'النوع', 'الاشتراك', 'عدد الطلاب'],
+      headers: ['م', 'اسم المجموعة', 'الأيام', 'تاريخ البدء', 'النوع', 'الاشتراك', 'عدد الطلاب'],
       rows,
     })
     toast('تم تصدير كشف المجاميع')
@@ -291,17 +296,17 @@ export default function GroupsPage() {
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="label">أيام الحصة في الأسبوع</label>
-              <input
-                className="input"
-                value={days}
-                onChange={(e) => setDays(e.target.value)}
-                placeholder="مثال: السبت والأربعاء"
-              />
-            </div>
+          <div>
+            <label className="label">أيام الحصة في الأسبوع</label>
+            <input
+              className="input"
+              value={days}
+              onChange={(e) => setDays(e.target.value)}
+              placeholder="مثال: السبت والأربعاء"
+            />
+          </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="label">وقت بدء الحصة</label>
               <input
@@ -309,6 +314,15 @@ export default function GroupsPage() {
                 className="input text-center font-bold"
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="label">تاريخ البدء</label>
+              <input
+                type="date"
+                className="input text-center font-bold"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
               />
             </div>
           </div>
