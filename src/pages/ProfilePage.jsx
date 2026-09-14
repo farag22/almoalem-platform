@@ -16,37 +16,48 @@ export default function ProfilePage() {
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
 
-  // جلب البيانات من الجدول مباشرة فور فتح الصفحة لضمان ملء الحقول والإيميل
+  // جلب البيانات أو تهئيتها فور فتح الصفحة
   useEffect(() => {
-    async function loadTeacherProfile() {
-      const targetId = teacherId || profile?.id
-      const targetEmail = user?.email || profile?.email
+    async function initProfile() {
+      const currentEmail = user?.email || profile?.email || ''
+      const currentId = teacherId || profile?.id || user?.id
 
-      if (!targetId && !targetEmail) return
+      setEmail(currentEmail)
 
+      if (!currentEmail && !currentId) return
+
+      // البحث في جدول teachers
       let query = supabase.from('teachers').select('*')
-      if (targetId) {
-        query = query.eq('id', targetId)
-      } else if (targetEmail) {
-        query = query.eq('email', targetEmail)
+      if (currentId) {
+        query = query.or(`id.eq.${currentId},email.eq.${currentEmail}`)
+      } else {
+        query = query.eq('email', currentEmail)
       }
 
-      const { data } = await query.maybeSingle()
+      const { data, error } = await query.maybeSingle()
 
       if (data) {
         setFullName(data.full_name || '')
         setAvatarUrl(data.avatar_url || '')
-        setEmail(data.email || targetEmail || '')
-      } else if (profile) {
-        setFullName(profile.full_name || '')
-        setAvatarUrl(profile.avatar_url || '')
-        setEmail(profile.email || targetEmail || '')
-      } else if (targetEmail) {
-        setEmail(targetEmail)
+        setEmail(data.email || currentEmail)
+      } else {
+        // إذا لم يكن السجل موجوداً في جدول teachers، نقوم بإنشائه تلقائياً
+        if (currentEmail) {
+          const { data: newTeacher, err } = await supabase
+            .from('teachers')
+            .insert([{ id: currentId || undefined, email: currentEmail, full_name: '', role: 'teacher' }])
+            .select()
+            .maybeSingle()
+
+          if (newTeacher) {
+            setFullName(newTeacher.full_name || '')
+            setAvatarUrl(newTeacher.avatar_url || '')
+          }
+        }
       }
     }
 
-    loadTeacherProfile()
+    initProfile()
   }, [profile, teacherId, user])
 
   // رفع الصورة الشخصية إلى Supabase Storage
@@ -57,8 +68,8 @@ export default function ProfilePage() {
       if (!file) return
 
       const fileExt = file.name.split('.').pop()
-      const currentId = teacherId || profile?.id || 'teacher'
-      const fileName = `${currentId}-${Date.now()}.${fileExt}`
+      const currentEmail = email || user?.email || 'teacher'
+      const fileName = `${currentEmail.replace(/[^a-zA-Z0-9]/g, '_')}-${Date.now()}.${fileExt}`
       const filePath = `${fileName}`
 
       const { error: uploadError } = await supabase.storage
@@ -81,28 +92,23 @@ export default function ProfilePage() {
   // حفظ التعديلات
   const handleSave = async (e) => {
     e.preventDefault()
-    const currentId = teacherId || profile?.id
     const targetEmail = email || user?.email || profile?.email
 
-    if (!currentId && !targetEmail) {
-      toast('بيانات المعلم غير متوفرة، يرجى إعادة تسجيل الدخول', 'error')
+    if (!targetEmail) {
+      toast('البريد الإلكتروني غير متوفر، يرجى إعادة تسجيل الدخول', 'error')
       return
     }
 
     setSaving(true)
     try {
-      let query = supabase.from('teachers').update({ 
-        full_name: fullName, 
-        avatar_url: avatarUrl 
-      })
-
-      if (currentId) {
-        query = query.eq('id', currentId)
-      } else {
-        query = query.eq('email', targetEmail)
-      }
-
-      const { error } = await query
+      // التحديث باستخدام البريد الإلكتروني لأنه المفتاح المضمون دائماً
+      const { error } = await supabase
+        .from('teachers')
+        .update({ 
+          full_name: fullName, 
+          avatar_url: avatarUrl 
+        })
+        .eq('email', targetEmail)
 
       if (error) throw error
 
