@@ -91,7 +91,6 @@ export default function AssistantsPage() {
         </div>
       </div>
 
-      {/* نموذج إضافة مساعد جديد */}
       <div className="card p-6 bg-white shadow-sm rounded-2xl">
         <h2 className="text-base font-extrabold text-slate-800 mb-4">إضافة مساعد جديد</h2>
         <form onSubmit={handleAdd} className="space-y-4">
@@ -151,7 +150,6 @@ export default function AssistantsPage() {
         </form>
       </div>
 
-      {/* قائمة المساعدين */}
       <div className="card p-6 bg-white shadow-sm rounded-2xl">
         <h2 className="text-base font-extrabold text-slate-800 mb-4">المساعدون المسجلون ({assistants.length})</h2>
         {assistants.length === 0 ? (
