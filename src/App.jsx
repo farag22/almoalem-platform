@@ -13,11 +13,9 @@ import AdminDashboard from './pages/AdminDashboard'
 import LandingPage from './pages/LandingPage'
 import ProfilePage from './pages/ProfilePage'
 
-// استيراد صفحات الإدارة الشاملة (بدون صفحة المساعدين)
+// استيراد الصفحات الأساسية الخاصة بإدارة السنتر
 import TimetablePage from './pages/TimetablePage'
-import QuizzesPage from './pages/QuizzesPage'
-import QuestionBankPage from './pages/QuestionBankPage'
-import BroadcastsPage from './pages/BroadcastsPage'
+import QuizzesPage from './pages/QuizzesPage' // مركز الإرسال والمتابعة عبر واتساب
 import ReportsPage from './pages/ReportsPage'
 
 export function Spinner({ size = 'h-8 w-8' }) {
@@ -127,11 +125,9 @@ function AppRoutes() {
         <Route path="sessions" element={<SessionsPage />} />
         <Route path="profile" element={<ProfilePage />} />
         
-        {/* مسارات الأقسام الشاملة */}
+        {/* المسارات الأساسية المتبقية للسنتر */}
         <Route path="timetable" element={<TimetablePage />} />
         <Route path="quizzes" element={<QuizzesPage />} />
-        <Route path="question-bank" element={<QuestionBankPage />} />
-        <Route path="broadcasts" element={<BroadcastsPage />} />
         <Route path="reports" element={<ReportsPage />} />
       </Route>
       <Route
