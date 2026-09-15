@@ -40,7 +40,6 @@ const SIDEBAR_NAV = [
   { to: '/dashboard/sessions', label: 'ماسح Qr', icon: Calendar },
   { to: '/dashboard/timetable', label: 'الجدول والتقويم', icon: CalendarDays },
   { to: '/dashboard/quizzes', label: 'مركز الإرسال والمتابعة', icon: MessageSquareText },
-  { to: '/dashboard/broadcasts', label: 'الرسائل والمنشورات', icon: MessageSquareText },
   { to: '/dashboard/reports', label: 'التقارير الشاملة', icon: BarChart3 },
   { to: '/dashboard/profile', label: 'الملف الشخصي', icon: User },
 ]
