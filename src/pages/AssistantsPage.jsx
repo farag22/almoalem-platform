@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { UserCog, Plus, Trash2, Mail, ShieldCheck, Lock } from 'lucide-react'
+import { UserCog, Plus, Trash2, Mail, ShieldCheck } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../components/ui/Toast'
@@ -39,66 +39,38 @@ export default function AssistantsPage() {
 
   const handleAdd = async (e) => {
     e.preventDefault()
-    if (!assistantName.trim() || !email.trim() || !password.trim()) {
-      toast('يرجى إدخال الاسم، البريد، وكلمة المرور للمساعد', 'error')
+    if (!assistantName.trim() || !email.trim()) {
+      toast('يرجى إدخال اسم المساعد وبريده الإلكتروني', 'error')
       return
     }
 
     setSubmitting(true)
 
-    // استخدام upsert أو إضافة مباشرة مع تجاهل خطأ التكرار البسيط
-    const { error: insertError } = await supabase.from('assistants').upsert(
-      [
-        {
-          teacher_id: teacherId,
-          assistant_name: assistantName,
-          email,
-          password_plain: password,
-          permissions: {
-            attendance: canAttendance,
-            payments: canPayments,
-          },
+    // إرسال الأعمدة المتوافقة فقط مع قاعدة البيانات
+    const { error } = await supabase.from('assistants').insert([
+      {
+        teacher_id: teacherId,
+        assistant_name: assistantName,
+        email,
+        permissions: {
+          attendance: canAttendance,
+          payments: canPayments,
         },
-      ],
-      { onConflict: 'email' }
-    )
+      },
+    ])
 
-    if (insertError) {
-      // محاولة إضافة عادية كبديل إذا لم تنجح الـ upsert
-      const { error: fallbackError } = await supabase.from('assistants').insert([
-        {
-          teacher_id: teacherId,
-          assistant_name: assistantName,
-          email: email + '_' + Date.now(), // جعل البريد فريداً تفادياً للقيد
-          password_plain: password,
-          permissions: {
-            attendance: canAttendance,
-            payments: canPayments,
-          },
-        },
-      ])
-
-      if (fallbackError) {
-        toast('تعذر حفظ بيانات المساعد', 'error')
-      } else {
-        toast('تمت إضافة المساعد بنجاح')
-        resetForm()
-        fetchAssistants()
-      }
+    if (error) {
+      toast('تعذر حفظ بيانات المساعد، تأكد من صحة البيانات', 'error')
     } else {
       toast('تمت إضافة المساعد بنجاح')
-      resetForm()
+      setAssistantName('')
+      setEmail('')
+      setPassword('')
+      setCanAttendance(true)
+      setCanPayments(false)
       fetchAssistants()
     }
     setSubmitting(false)
-  }
-
-  const resetForm = () => {
-    setAssistantName('')
-    setEmail('')
-    setPassword('')
-    setCanAttendance(true)
-    setCanPayments(false)
   }
 
   const handleDelete = async (id) => {
@@ -119,7 +91,7 @@ export default function AssistantsPage() {
             <UserCog className="h-6 w-6 text-primary-600" />
             <span>إدارة المساعدين والصلاحيات</span>
           </h1>
-          <p className="text-sm text-slate-500 mt-1">تحديد صلاحيات وبيانات دخول المساعدين والسكرتارية.</p>
+          <p className="text-sm text-slate-500 mt-1">تحديد صلاحيات المساعدين والسكرتارية في النظام.</p>
         </div>
       </div>
 
@@ -151,15 +123,14 @@ export default function AssistantsPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-600 mb-1">كلمة المرور</label>
+              <label className="block text-xs font-bold text-slate-600 mb-1">كلمة المرور (اختياري)</label>
               <input
                 type="text"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="كلمة مرور الدخول"
+                placeholder="للمتابعة الشخصية"
                 className="input text-sm"
                 dir="ltr"
-                required
               />
             </div>
           </div>
@@ -204,18 +175,10 @@ export default function AssistantsPage() {
               <div key={a.id} className="p-4 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between gap-4">
                 <div className="space-y-1 min-w-0">
                   <h3 className="font-extrabold text-slate-800 text-base">{a.assistant_name}</h3>
-                  <div className="flex flex-wrap gap-3 text-xs text-slate-500" dir="ltr">
-                    <span className="flex items-center gap-1">
-                      <Mail className="h-3 w-3 text-slate-400" />
-                      {a.email}
-                    </span>
-                    {a.password_plain && (
-                      <span className="flex items-center gap-1 text-primary-600 font-bold">
-                        <Lock className="h-3 w-3" />
-                        كلمة السر: {a.password_plain}
-                      </span>
-                    )}
-                  </div>
+                  <p className="text-xs text-slate-500 flex items-center gap-1" dir="ltr">
+                    <Mail className="h-3 w-3 text-slate-400" />
+                    <span>{a.email}</span>
+                  </p>
                   <div className="flex flex-wrap gap-2 mt-2">
                     {a.permissions?.attendance && (
                       <span className="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1">
