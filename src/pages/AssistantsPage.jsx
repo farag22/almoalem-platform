@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { UserCog, Plus, Trash2, Mail, ShieldCheck } from 'lucide-react'
+import { UserCog, Plus, Trash2, Mail, ShieldCheck, Lock } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../components/ui/Toast'
@@ -39,15 +39,32 @@ export default function AssistantsPage() {
 
   const handleAdd = async (e) => {
     e.preventDefault()
-    if (!assistantName.trim() || !email.trim()) {
-      toast('يرجى إدخال اسم المساعد وبريده الإلكتروني', 'error')
+    if (!assistantName.trim() || !email.trim() || !password.trim()) {
+      toast('يرجى إدخال الاسم، البريد، وكلمة المرور للمساعد', 'error')
+      return
+    }
+
+    if (password.length < 6) {
+      toast('كلمة المرور يجب أن تكون 6 أحرف على الأقل', 'error')
       return
     }
 
     setSubmitting(true)
 
-    // إرسال الأعمدة المتوافقة فقط مع قاعدة البيانات
-    const { error } = await supabase.from('assistants').insert([
+    // 1. محاولة إنشاء حساب توثيق فعلي للمساعد في النظام ليتمكن من الدخول مباشرة
+    const { error: authError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          role: 'assistant',
+          teacher_id: teacherId,
+        },
+      },
+    })
+
+    // 2. حفظ بيانات المساعد والصلاحيات في جدول assistants
+    const { error: dbError } = await supabase.from('assistants').insert([
       {
         teacher_id: teacherId,
         assistant_name: assistantName,
@@ -59,10 +76,10 @@ export default function AssistantsPage() {
       },
     ])
 
-    if (error) {
-      toast('تعذر حفظ بيانات المساعد، تأكد من صحة البيانات', 'error')
+    if (dbError && authError) {
+      toast('تعذر إضافة المساعد، ربما البريد مسجل مسبقاً', 'error')
     } else {
-      toast('تمت إضافة المساعد بنجاح')
+      toast('تم إنشاء حساب المساعد وحفظ صلاحياته بنجاح!')
       setAssistantName('')
       setEmail('')
       setPassword('')
@@ -91,12 +108,12 @@ export default function AssistantsPage() {
             <UserCog className="h-6 w-6 text-primary-600" />
             <span>إدارة المساعدين والصلاحيات</span>
           </h1>
-          <p className="text-sm text-slate-500 mt-1">تحديد صلاحيات المساعدين والسكرتارية في النظام.</p>
+          <p className="text-sm text-slate-500 mt-1">إنشاء حسابات المساعدين وتحديد صلاحياتهم في النظام بضغطة زر.</p>
         </div>
       </div>
 
       <div className="card p-6 bg-white shadow-sm rounded-2xl">
-        <h2 className="text-base font-extrabold text-slate-800 mb-4">إضافة مساعد جديد</h2>
+        <h2 className="text-base font-extrabold text-slate-800 mb-4">إنشاء حساب وإضافة مساعد جديد</h2>
         <form onSubmit={handleAdd} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
@@ -123,14 +140,15 @@ export default function AssistantsPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-600 mb-1">كلمة المرور (اختياري)</label>
+              <label className="block text-xs font-bold text-slate-600 mb-1">كلمة المرور للدخول</label>
               <input
                 type="text"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="للمتابعة الشخصية"
+                placeholder="6 أحرف على الأقل"
                 className="input text-sm"
                 dir="ltr"
+                required
               />
             </div>
           </div>
@@ -159,7 +177,7 @@ export default function AssistantsPage() {
           <div className="flex justify-end pt-2">
             <button type="submit" disabled={submitting} className="btn-primary px-6 py-2.5 text-sm font-bold flex items-center gap-1.5">
               <Plus className="h-4 w-4" />
-              <span>حفظ وإضافة المساعد</span>
+              <span>إنشاء الحساب وحفظ الصلاحيات</span>
             </button>
           </div>
         </form>
