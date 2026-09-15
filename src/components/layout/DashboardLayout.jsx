@@ -17,7 +17,6 @@ import {
   FileSpreadsheet,
   BookOpen,
   MessageSquareText,
-  UserCog,
   BarChart3,
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
@@ -45,7 +44,6 @@ const SIDEBAR_NAV = [
   { to: '/dashboard/quizzes', label: 'الاختبارات والواجبات', icon: FileSpreadsheet },
   { to: '/dashboard/question-bank', label: 'بنك الأسئلة', icon: BookOpen },
   { to: '/dashboard/broadcasts', label: 'الرسائل والمنشورات', icon: MessageSquareText },
-  { to: '/dashboard/assistants', label: 'المساعدين والصلاحيات', icon: UserCog },
   { to: '/dashboard/reports', label: 'التقارير الشاملة', icon: BarChart3 },
   { to: '/dashboard/profile', label: 'الملف الشخصي', icon: User },
 ]
