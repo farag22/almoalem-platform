@@ -14,7 +14,6 @@ import {
   Calendar,
   User,
   CalendarDays,
-  BookOpen,
   MessageSquareText,
   BarChart3,
 } from 'lucide-react'
@@ -41,7 +40,6 @@ const SIDEBAR_NAV = [
   { to: '/dashboard/sessions', label: 'ماسح Qr', icon: Calendar },
   { to: '/dashboard/timetable', label: 'الجدول والتقويم', icon: CalendarDays },
   { to: '/dashboard/quizzes', label: 'مركز الإرسال والمتابعة', icon: MessageSquareText },
-  { to: '/dashboard/question-bank', label: 'بنك الأسئلة', icon: BookOpen },
   { to: '/dashboard/broadcasts', label: 'الرسائل والمنشورات', icon: MessageSquareText },
   { to: '/dashboard/reports', label: 'التقارير الشاملة', icon: BarChart3 },
   { to: '/dashboard/profile', label: 'الملف الشخصي', icon: User },
@@ -100,7 +98,7 @@ function SidebarContent({ onNavigate }) {
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={2}
-                d="M12 8c1.657 0 3 1.343 3 3s-1.343 3-3 3-3-1.343-3-3 1.343-3 3-3zM4.05 12a7.95 7.95 0 001.43 4.56 8 8 0 013.07-1.4A8 8 0 0012 13a8 8 0 003.45 2.16 8 8 0 013.07 1.4A7.95 7.95 0 0019.95 12a7.95 7.95 0 00-1.43-4.56 8 8 0 01-3.07 1.4A8 8 0 0012 6.84a8 8 0 01-3.45-2.16A8 8 0 014.05 12z"
+                d="M12 8c1.657 0 3 1.343 3 3s-1.343 3-3 3-3-1.343-3-3 1.343-3 3-3zM4.05 12a7.95 7.95 0 001.43 4.56 8 8 0 013.07-1.4A8 8 0 0012 13a8 8 0 003.45 2.16 8 8 0 013.07 1.4A7.95 7.95 0 0119.95 12a7.95 7.95 0 00-1.43-4.56 8 8 0 01-3.07 1.4A8 8 0 0012 6.84a8 8 0 01-3.45-2.16A8 8 0 014.05 12z"
               />
             </svg>
             لوحة الإدارة
@@ -164,7 +162,7 @@ export default function DashboardLayout() {
 
         {/* Sidebar mobile drawer */}
         {mobileOpen && (
-          <div className="fixed inset-0 z-50 lg:hidden">
+          <div className="flex fixed inset-0 z-50 lg:hidden">
             <div className="absolute inset-0 bg-slate-900/60" onClick={() => setMobileOpen(false)} />
             <aside className="absolute inset-y-0 right-0 w-72">
               <div className="relative h-full bg-gradient-to-b from-primary-700 to-primary-900 shadow-2xl">
