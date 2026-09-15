@@ -20,7 +20,6 @@ export default function ReportsPage() {
       if (!teacherId) return
       setLoading(true)
 
-      // 1. جلب طلاب المعلم ومجاميعه
       const [sRes, gRes, aRes] = await Promise.all([
         supabase.from('students').select('id').eq('teacher_id', teacherId),
         supabase.from('groups').select('id', { count: 'exact' }).eq('teacher_id', teacherId),
@@ -32,20 +31,24 @@ export default function ReportsPage() {
       const studentsCount = students.length
       const groupsCount = gRes.count ?? gRes.data?.length ?? 0
 
-      // 2. جلب المدفوعات الخاصة بطلاب المعلم فقط
       let collected = 0
       let remaining = 0
 
       if (studentIds.length > 0) {
         const { data: pData } = await supabase
           .from('payments')
-          .select('amount, is_paid')
+          .select('*')
           .in('student_id', studentIds)
 
         ;(pData ?? []).forEach((p) => {
-          const amt = Number(p.amount) || 0
-          if (p.is_paid) collected += amt
-          else remaining += amt
+          const amt = Number(p.amount) || Number(p.paid_amount) || 0
+          const isPaid = p.is_paid === true || p.status === 'paid' || p.status === 'تم الدفع' || amt > 0
+          
+          if (isPaid) {
+            collected += amt
+          } else {
+            remaining += amt
+          }
         })
       }
 
