@@ -85,7 +85,6 @@ export default function BroadcastsPage() {
         </div>
       </div>
 
-      {/* نموذج إرسال رسالة جديدة */}
       <div className="card p-6 bg-white shadow-sm rounded-2xl">
         <h2 className="text-base font-extrabold text-slate-800 mb-4">إنشاء رسالة أو إشعار جديد</h2>
         <form onSubmit={handleAdd} className="space-y-4">
@@ -132,7 +131,6 @@ export default function BroadcastsPage() {
         </form>
       </div>
 
-      {/* قائمة الرسائل السابقة */}
       <div className="card p-6 bg-white shadow-sm rounded-2xl">
         <h2 className="text-base font-extrabold text-slate-800 mb-4">الرسائل المُرسلة مسبقاً ({broadcasts.length})</h2>
         {broadcasts.length === 0 ? (
