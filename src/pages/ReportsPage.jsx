@@ -20,23 +20,34 @@ export default function ReportsPage() {
       if (!teacherId) return
       setLoading(true)
 
-      const [sRes, gRes, pRes, aRes] = await Promise.all([
-        supabase.from('students').select('id, group_id', { count: 'exact' }).eq('teacher_id', teacherId),
+      // 1. جلب طلاب المعلم ومجاميعه
+      const [sRes, gRes, aRes] = await Promise.all([
+        supabase.from('students').select('id').eq('teacher_id', teacherId),
         supabase.from('groups').select('id', { count: 'exact' }).eq('teacher_id', teacherId),
-        supabase.from('payments').select('amount, is_paid'),
         supabase.from('attendance').select('status'),
       ])
 
-      const studentsCount = sRes.count ?? sRes.data?.length ?? 0
+      const students = sRes.data ?? []
+      const studentIds = students.map(s => s.id)
+      const studentsCount = students.length
       const groupsCount = gRes.count ?? gRes.data?.length ?? 0
 
+      // 2. جلب المدفوعات الخاصة بطلاب المعلم فقط
       let collected = 0
       let remaining = 0
-      ;(pRes.data ?? []).forEach((p) => {
-        const amt = Number(p.amount) || 0
-        if (p.is_paid) collected += amt
-        else remaining += amt
-      })
+
+      if (studentIds.length > 0) {
+        const { data: pData } = await supabase
+          .from('payments')
+          .select('amount, is_paid')
+          .in('student_id', studentIds)
+
+        ;(pData ?? []).forEach((p) => {
+          const amt = Number(p.amount) || 0
+          if (p.is_paid) collected += amt
+          else remaining += amt
+        })
+      }
 
       const attList = aRes.data ?? []
       const presentCount = attList.filter((a) => a.status === 'present').length
