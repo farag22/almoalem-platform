@@ -11,7 +11,15 @@ import PaymentsPage from './pages/PaymentsPage'
 import SessionsPage from './pages/SessionsPage'
 import AdminDashboard from './pages/AdminDashboard'
 import LandingPage from './pages/LandingPage'
-import ProfilePage from './pages/ProfilePage' // استيراد صفحة الملف الشخصي
+import ProfilePage from './pages/ProfilePage'
+
+// استيراد الصفحات الجديدة للإدارة الشاملة
+import TimetablePage from './pages/TimetablePage'
+import QuizzesPage from './pages/QuizzesPage'
+import QuestionBankPage from './pages/QuestionBankPage'
+import BroadcastsPage from './pages/BroadcastsPage'
+import AssistantsPage from './pages/AssistantsPage'
+import ReportsPage from './pages/ReportsPage'
 
 export function Spinner({ size = 'h-8 w-8' }) {
   return (
@@ -118,7 +126,15 @@ function AppRoutes() {
         <Route path="attendance" element={<AttendancePage />} />
         <Route path="payments" element={<PaymentsPage />} />
         <Route path="sessions" element={<SessionsPage />} />
-        <Route path="profile" element={<ProfilePage />} /> {/* مسار صفحة الملف الشخصي */}
+        <Route path="profile" element={<ProfilePage />} />
+        
+        {/* مسارات الأقسام الجديدة المضافة */}
+        <Route path="timetable" element={<TimetablePage />} />
+        <Route path="quizzes" element={<QuizzesPage />} />
+        <Route path="question-bank" element={<QuestionBankPage />} />
+        <Route path="broadcasts" element={<BroadcastsPage />} />
+        <Route path="assistants" element={<AssistantsPage />} />
+        <Route path="reports" element={<ReportsPage />} />
       </Route>
       <Route
         path="/"
