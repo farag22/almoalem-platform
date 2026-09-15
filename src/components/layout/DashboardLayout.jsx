@@ -13,24 +13,40 @@ import {
   Phone,
   Calendar,
   User,
+  CalendarDays,
+  FileSpreadsheet,
+  BookOpen,
+  MessageSquareText,
+  UserCog,
+  BarChart3,
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { ToastProvider } from '../ui/Toast'
 import { Spinner } from '../../App'
 
-// الروابط التي تظهر في الشريط السفلي للهواتف (بدون الملف الشخصي)
+// الروابط الأساسية التي تظهر في الشريط السفلي للهواتف
 const MOBILE_NAV = [
   { to: '/dashboard', label: 'الرئيسية', icon: LayoutDashboard, end: true },
   { to: '/dashboard/groups', label: 'المجاميع', icon: Layers },
   { to: '/dashboard/students', label: 'الطلاب', icon: Users },
   { to: '/dashboard/attendance', label: 'الحضور', icon: CalendarCheck },
   { to: '/dashboard/payments', label: 'المصاريف', icon: Wallet },
-  { to: '/dashboard/sessions', label: 'ماسح Qr', icon: Calendar },
 ]
 
-// الروابط التي تظهر في القائمة الجانبية (متضمنة الملف الشخصي)
+// كافة الروابط الشاملة التي تظهر في القائمة الجانبية (Sidebar)
 const SIDEBAR_NAV = [
-  ...MOBILE_NAV,
+  { to: '/dashboard', label: 'الرئيسية', icon: LayoutDashboard, end: true },
+  { to: '/dashboard/groups', label: 'المجاميع', icon: Layers },
+  { to: '/dashboard/students', label: 'الطلاب', icon: Users },
+  { to: '/dashboard/attendance', label: 'الحضور', icon: CalendarCheck },
+  { to: '/dashboard/payments', label: 'المصاريف', icon: Wallet },
+  { to: '/dashboard/sessions', label: 'ماسح Qr', icon: Calendar },
+  { to: '/dashboard/timetable', label: 'الجدول والتقويم', icon: CalendarDays },
+  { to: '/dashboard/quizzes', label: 'الاختبارات والواجبات', icon: FileSpreadsheet },
+  { to: '/dashboard/question-bank', label: 'بنك الأسئلة', icon: BookOpen },
+  { to: '/dashboard/broadcasts', label: 'الرسائل والمنشورات', icon: MessageSquareText },
+  { to: '/dashboard/assistants', label: 'المساعدين والصلاحيات', icon: UserCog },
+  { to: '/dashboard/reports', label: 'التقارير الشاملة', icon: BarChart3 },
   { to: '/dashboard/profile', label: 'الملف الشخصي', icon: User },
 ]
 
@@ -51,7 +67,7 @@ function SidebarContent({ onNavigate }) {
         </div>
       </div>
 
-      <nav className="mt-2 flex-1 space-y-1 px-3">
+      <nav className="mt-2 flex-1 space-y-1 px-3 overflow-y-auto">
         {SIDEBAR_NAV.map((item) => (
           <NavLink
             key={item.to}
@@ -66,8 +82,8 @@ function SidebarContent({ onNavigate }) {
               }`
             }
           >
-            <item.icon className="h-5 w-5" />
-            {item.label}
+            <item.icon className="h-5 w-5 shrink-0" />
+            <span className="truncate">{item.label}</span>
           </NavLink>
         ))}
         {isAdmin && (
@@ -82,7 +98,7 @@ function SidebarContent({ onNavigate }) {
               }`
             }
           >
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -144,7 +160,7 @@ export default function DashboardLayout() {
       <div className="flex min-h-screen bg-slate-100 pb-20 lg:pb-0">
         {/* Sidebar desktop */}
         <aside className="fixed inset-y-0 right-0 z-30 hidden w-64 lg:block">
-          <div className="h-full bg-gradient-to-b from-primary-700 to-primary-900">
+          <div className="h-full bg-gradient-to-b from-primary-700 to-primary-900 shadow-xl">
             <SidebarContent />
           </div>
         </aside>
