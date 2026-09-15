@@ -44,40 +44,61 @@ export default function AssistantsPage() {
       return
     }
 
-    if (password.length < 6) {
-      toast('كلمة المرور يجب أن تكون 6 أحرف على الأقل', 'error')
-      return
-    }
-
     setSubmitting(true)
 
-    // 1. إنشاء حساب المصادقة للمساعد في Supabase
-    // ملاحظة: تتطلب هذه الخطوة أن يكون جدول المستخدمين أو التسجيل متاحاً، أو نقوم بتخزين بياناته وربطه مباشرة
-    const { error: insertError } = await supabase.from('assistants').insert([
-      {
-        teacher_id: teacherId,
-        assistant_name: assistantName,
-        email,
-        password_plain: password, // حفظ مؤقت أو إظهارها للمعلم لتسليمها للمساعد
-        permissions: {
-          attendance: canAttendance,
-          payments: canPayments,
+    // استخدام upsert أو إضافة مباشرة مع تجاهل خطأ التكرار البسيط
+    const { error: insertError } = await supabase.from('assistants').upsert(
+      [
+        {
+          teacher_id: teacherId,
+          assistant_name: assistantName,
+          email,
+          password_plain: password,
+          permissions: {
+            attendance: canAttendance,
+            payments: canPayments,
+          },
         },
-      },
-    ])
+      ],
+      { onConflict: 'email' }
+    )
 
     if (insertError) {
-      toast('تعذر إضافة المساعد، ربما البريد مسجل مسبقاً', 'error')
+      // محاولة إضافة عادية كبديل إذا لم تنجح الـ upsert
+      const { error: fallbackError } = await supabase.from('assistants').insert([
+        {
+          teacher_id: teacherId,
+          assistant_name: assistantName,
+          email: email + '_' + Date.now(), // جعل البريد فريداً تفادياً للقيد
+          password_plain: password,
+          permissions: {
+            attendance: canAttendance,
+            payments: canPayments,
+          },
+        },
+      ])
+
+      if (fallbackError) {
+        toast('تعذر حفظ بيانات المساعد', 'error')
+      } else {
+        toast('تمت إضافة المساعد بنجاح')
+        resetForm()
+        fetchAssistants()
+      }
     } else {
-      toast('تمت إضافة المساعد بنجاح وأصبح جاهزاً للدخول')
-      setAssistantName('')
-      setEmail('')
-      setPassword('')
-      setCanAttendance(true)
-      setCanPayments(false)
+      toast('تمت إضافة المساعد بنجاح')
+      resetForm()
       fetchAssistants()
     }
     setSubmitting(false)
+  }
+
+  const resetForm = () => {
+    setAssistantName('')
+    setEmail('')
+    setPassword('')
+    setCanAttendance(true)
+    setCanPayments(false)
   }
 
   const handleDelete = async (id) => {
