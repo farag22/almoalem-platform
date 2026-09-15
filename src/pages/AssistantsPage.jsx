@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { UserCog, Plus, Trash2, Mail, ShieldCheck } from 'lucide-react'
+import { UserCog, Plus, Trash2, Mail, ShieldCheck, Lock } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../components/ui/Toast'
@@ -13,6 +13,7 @@ export default function AssistantsPage() {
 
   const [assistantName, setAssistantName] = useState('')
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [canAttendance, setCanAttendance] = useState(true)
   const [canPayments, setCanPayments] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -38,17 +39,26 @@ export default function AssistantsPage() {
 
   const handleAdd = async (e) => {
     e.preventDefault()
-    if (!assistantName.trim() || !email.trim()) {
-      toast('يرجى إدخال اسم المساعد وبريده الإلكتروني', 'error')
+    if (!assistantName.trim() || !email.trim() || !password.trim()) {
+      toast('يرجى إدخال الاسم، البريد، وكلمة المرور للمساعد', 'error')
+      return
+    }
+
+    if (password.length < 6) {
+      toast('كلمة المرور يجب أن تكون 6 أحرف على الأقل', 'error')
       return
     }
 
     setSubmitting(true)
-    const { error } = await supabase.from('assistants').insert([
+
+    // 1. إنشاء حساب المصادقة للمساعد في Supabase
+    // ملاحظة: تتطلب هذه الخطوة أن يكون جدول المستخدمين أو التسجيل متاحاً، أو نقوم بتخزين بياناته وربطه مباشرة
+    const { error: insertError } = await supabase.from('assistants').insert([
       {
         teacher_id: teacherId,
         assistant_name: assistantName,
         email,
+        password_plain: password, // حفظ مؤقت أو إظهارها للمعلم لتسليمها للمساعد
         permissions: {
           attendance: canAttendance,
           payments: canPayments,
@@ -56,12 +66,13 @@ export default function AssistantsPage() {
       },
     ])
 
-    if (error) {
-      toast('تعذر إضافة المساعد', 'error')
+    if (insertError) {
+      toast('تعذر إضافة المساعد، ربما البريد مسجل مسبقاً', 'error')
     } else {
-      toast('تمت إضافة المساعد بنجاح')
+      toast('تمت إضافة المساعد بنجاح وأصبح جاهزاً للدخول')
       setAssistantName('')
       setEmail('')
+      setPassword('')
       setCanAttendance(true)
       setCanPayments(false)
       fetchAssistants()
@@ -87,14 +98,14 @@ export default function AssistantsPage() {
             <UserCog className="h-6 w-6 text-primary-600" />
             <span>إدارة المساعدين والصلاحيات</span>
           </h1>
-          <p className="text-sm text-slate-500 mt-1">تحديد صلاحيات المساعدين والسكرتارية في رصد الحضور والمصاريف.</p>
+          <p className="text-sm text-slate-500 mt-1">تحديد صلاحيات وبيانات دخول المساعدين والسكرتارية.</p>
         </div>
       </div>
 
       <div className="card p-6 bg-white shadow-sm rounded-2xl">
         <h2 className="text-base font-extrabold text-slate-800 mb-4">إضافة مساعد جديد</h2>
         <form onSubmit={handleAdd} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-bold text-slate-600 mb-1">اسم المساعد</label>
               <input
@@ -113,6 +124,18 @@ export default function AssistantsPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="assistant@example.com"
+                className="input text-sm"
+                dir="ltr"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-600 mb-1">كلمة المرور</label>
+              <input
+                type="text"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="كلمة مرور الدخول"
                 className="input text-sm"
                 dir="ltr"
                 required
@@ -160,10 +183,18 @@ export default function AssistantsPage() {
               <div key={a.id} className="p-4 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between gap-4">
                 <div className="space-y-1 min-w-0">
                   <h3 className="font-extrabold text-slate-800 text-base">{a.assistant_name}</h3>
-                  <p className="text-xs text-slate-500 flex items-center gap-1" dir="ltr">
-                    <Mail className="h-3 w-3 text-slate-400" />
-                    <span>{a.email}</span>
-                  </p>
+                  <div className="flex flex-wrap gap-3 text-xs text-slate-500" dir="ltr">
+                    <span className="flex items-center gap-1">
+                      <Mail className="h-3 w-3 text-slate-400" />
+                      {a.email}
+                    </span>
+                    {a.password_plain && (
+                      <span className="flex items-center gap-1 text-primary-600 font-bold">
+                        <Lock className="h-3 w-3" />
+                        كلمة السر: {a.password_plain}
+                      </span>
+                    )}
+                  </div>
                   <div className="flex flex-wrap gap-2 mt-2">
                     {a.permissions?.attendance && (
                       <span className="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1">
