@@ -88,7 +88,6 @@ export default function QuestionBankPage() {
         </div>
       </div>
 
-      {/* نموذج إضافة سؤال جديد */}
       <div className="card p-6 bg-white shadow-sm rounded-2xl">
         <h2 className="text-base font-extrabold text-slate-800 mb-4">إضافة سؤال جديد للمخزن</h2>
         <form onSubmit={handleAdd} className="space-y-4">
@@ -144,7 +143,6 @@ export default function QuestionBankPage() {
         </form>
       </div>
 
-      {/* قائمة الأسئلة */}
       <div className="card p-6 bg-white shadow-sm rounded-2xl">
         <h2 className="text-base font-extrabold text-slate-800 mb-4">الأسئلة المخزنة ({questions.length})</h2>
         {questions.length === 0 ? (
