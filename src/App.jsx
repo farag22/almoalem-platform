@@ -13,12 +13,11 @@ import AdminDashboard from './pages/AdminDashboard'
 import LandingPage from './pages/LandingPage'
 import ProfilePage from './pages/ProfilePage'
 
-// استيراد الصفحات الجديدة للإدارة الشاملة
+// استيراد صفحات الإدارة الشاملة (بدون صفحة المساعدين)
 import TimetablePage from './pages/TimetablePage'
 import QuizzesPage from './pages/QuizzesPage'
 import QuestionBankPage from './pages/QuestionBankPage'
 import BroadcastsPage from './pages/BroadcastsPage'
-import AssistantsPage from './pages/AssistantsPage'
 import ReportsPage from './pages/ReportsPage'
 
 export function Spinner({ size = 'h-8 w-8' }) {
@@ -128,12 +127,11 @@ function AppRoutes() {
         <Route path="sessions" element={<SessionsPage />} />
         <Route path="profile" element={<ProfilePage />} />
         
-        {/* مسارات الأقسام الجديدة المضافة */}
+        {/* مسارات الأقسام الشاملة */}
         <Route path="timetable" element={<TimetablePage />} />
         <Route path="quizzes" element={<QuizzesPage />} />
         <Route path="question-bank" element={<QuestionBankPage />} />
         <Route path="broadcasts" element={<BroadcastsPage />} />
-        <Route path="assistants" element={<AssistantsPage />} />
         <Route path="reports" element={<ReportsPage />} />
       </Route>
       <Route
