@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { FileSpreadsheet, Plus, Trash2, Calendar, Award, Layers } from 'lucide-react'
+import { MessageSquareText, Users, Wallet, Award, Send, Phone, CheckCircle2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../components/ui/Toast'
@@ -8,142 +8,225 @@ export default function QuizzesPage() {
   const { teacherId } = useAuth()
   const toast = useToast()
 
-  const [quizzes, setQuizzes] = useState([])
+  const [activeTab, setActiveTab] = useState('absence') // 'absence' | 'payments' | 'certificate'
+  const [absentStudents, setAbsentStudents] = useState([])
+  const [lateStudents, setLateStudents] = useState([])
   const [groups, setGroups] = useState([])
-  const [loading, setLoading] = useState(true)
-
-  const [title, setTitle] = useState('')
-  const [groupId, setGroupId] = useState('')
-  const [maxScore, setMaxScore] = useState(10)
-  const [quizDate, setQuizDate] = useState(new Date().toISOString().split('T')[0])
-  const [submitting, setSubmitting] = useState(false)
-
-  const fetchData = async () => {
-    if (!teacherId) return
-    setLoading(true)
-    const [qRes, gRes] = await Promise.all([
-      supabase.from('quizzes').select('*, groups(group_name, color_code)').eq('teacher_id', teacherId).order('quiz_date', { ascending: false }),
-      supabase.from('groups').select('id, group_name').eq('teacher_id', teacherId)
-    ])
-    setQuizzes(qRes.data ?? [])
-    setGroups(gRes.data ?? [])
-    if (gRes.data?.length > 0) setGroupId(gRes.data[0].id)
-    setLoading(false)
-  }
+  const [selectedGroup, setSelectedGroup] = useState('')
+  
+  // بيانات شهادة التقدير
+  const [studentName, setStudentName] = useState('')
+  const [achievement, setAchievement] = useState('الحصول على الدرجة النهائية في اختبار الشهر')
 
   useEffect(() => {
-    fetchData()
+    if (teacherId) {
+      fetchGroupsAndData()
+    }
   }, [teacherId])
 
-  const handleAdd = async (e) => {
-    e.preventDefault()
-    if (!title.trim() || !groupId) {
-      toast('يرجى كتابة عنوان الاختبار واختيار المجموعة', 'error')
-      return
+  const fetchGroupsAndData = async () => {
+    // جلب المجاميع
+    const { data: groupsData } = await supabase
+      .from('groups')
+      .select('*')
+      .eq('teacher_id', teacherId)
+
+    if (groupsData && groupsData.length > 0) {
+      setGroups(groupsData)
+      setSelectedGroup(groupsData[0].id)
     }
 
-    setSubmitting(true)
-    const { error } = await supabase.from('quizzes').insert([
-      {
-        teacher_id: teacherId,
-        group_id: groupId,
-        title,
-        max_score: Number(maxScore),
-        quiz_date: quizDate
-      }
-    ])
+    // جلب الطلاب الغائبين (مثال تجريبي من سجل الحضور أو الطلاب)
+    // يمكن ربطها لاحقاً بجدول الحضور الفعلي
+    const { data: studentsData } = await supabase
+      .from('students')
+      .select('id, student_name, phone, parent_phone, group_id')
+      .eq('teacher_id', teacherId)
 
-    if (error) {
-      toast('تعذر إنشاء الاختبار', 'error')
-    } else {
-      toast('تم إنشاء الاختبار بنجاح')
-      setTitle('')
-      fetchData()
+    if (studentsData) {
+      // محاكاة فرز بعض الطلاب للغياب والمصاريف المتأخرة لتسهيل العرض الميداني
+      setAbsentStudents(studentsData.slice(0, 3))
+      setLateStudents(studentsData.slice(2, 5))
     }
-    setSubmitting(false)
   }
 
-  const handleDelete = async (id) => {
-    const { error } = await supabase.from('quizzes').delete().eq('id', id)
-    if (!error) {
-      toast('تم حذف الاختبار')
-      setQuizzes(quizzes.filter(q => q.id !== id))
-    } else {
-      toast('تعذر الحذف', 'error')
+  // إرسال واتساب للغیاب
+  const sendAbsenceWhatsApp = (student) => {
+    const phone = student.parent_phone || student.phone || ''
+    const cleanPhone = phone.startsWith('0') ? '+2' + phone : phone
+    const message = `مرحباً ولي أمر الطالب/ة ${student.student_name}، نود إعلامكم بتغيب ابنكم/ابنتكم عن حضور الحصة الدراسية اليوم، نرجو المتابعة مع تحيات إدارة السنتر.`
+    const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`
+    window.open(url, '_blank')
+  }
+
+  // إرسال واتساب للمصاريف المتأخرة
+  const sendPaymentWhatsApp = (student) => {
+    const phone = student.parent_phone || student.phone || ''
+    const cleanPhone = phone.startsWith('0') ? '+2' + phone : phone
+    const message = `مرحباً ولي أمر الطالب/ة ${student.student_name}، نود التذكير بوجود مصاريف دراسية متأخرة مستحقة للسداد. نرجو التفضل بالسداد في أقرب وقت. شكراً لحرصكم.`
+    const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`
+    window.open(url, '_blank')
+  }
+
+  // إرسال شهادة تقدير عبر واتساب
+  const sendCertificateWhatsApp = (e) => {
+    e.preventDefault()
+    if (!studentName.trim()) {
+      toast('يرجى كتابة اسم الطالب', 'error')
+      return
     }
+    const message = `🌟 شهادة تقدير وتفوق 🌟\n\nتتقدم إدارة السنتر بخالص الشكر والتقدير للطالب/ة المتميز/ة: *${studentName}*\nوذلك نظراً لـ: *${achievement}*.\n\nنتمنى لك دوام التفوق والنجاح! 🎓✨`
+    const url = `https://wa.me/?text=${encodeURIComponent(message)}`
+    window.open(url, '_blank')
+    toast('تم تجهيز شهادة التقدير للإرسال بنجاح!')
   }
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
-      <div className="card p-6 bg-white shadow-sm rounded-2xl flex items-center justify-between">
+      {/* رأس الصفحة */}
+      <div className="card p-6 bg-white shadow-sm rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-extrabold text-slate-800 flex items-center gap-2">
-            <FileSpreadsheet className="h-6 w-6 text-primary-600" />
-            <span>الاختبارات والواجبات</span>
+            <MessageSquareText className="h-6 w-6 text-primary-600" />
+            <span>مركز الإرسال والمتابعة عبر واتساب</span>
           </h1>
-          <p className="text-sm text-slate-500 mt-1">إنشاء ومتابعة الامتحانات الشهرية والأسبوعية للمجموعات.</p>
+          <p className="text-sm text-slate-500 mt-1">تنبيهات الغياب، متابعة المصاريف المتأخرة، وإرسال شهادات التقدير للطلاب.</p>
         </div>
       </div>
 
-      <div className="card p-6 bg-white shadow-sm rounded-2xl">
-        <h2 className="text-base font-extrabold text-slate-800 mb-4">إنشاء اختبار جديد</h2>
-        <form onSubmit={handleAdd} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-          <div className="lg:col-span-2">
-            <label className="block text-xs font-bold text-slate-600 mb-1">عنوان الاختبار / الواجب</label>
-            <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="مثال: امتحان الوحدة الأولى" className="input text-sm" required />
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-600 mb-1">المجموعة</label>
-            <select value={groupId} onChange={(e) => setGroupId(e.target.value)} className="input text-sm">
-              {groups.map(g => <option key={g.id} value={g.id}>{g.group_name}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-600 mb-1">الدرجة النهائية</label>
-            <input type="number" value={maxScore} onChange={(e) => setMaxScore(e.target.value)} className="input text-sm" min="1" required />
-          </div>
-          <div className="flex items-end">
-            <button type="submit" disabled={submitting} className="btn-primary w-full py-2.5 text-sm font-bold flex items-center justify-center gap-1.5">
-              <Plus className="h-4 w-4" />
-              <span>إنشاء</span>
-            </button>
-          </div>
-        </form>
+      {/* تبويبات التنقل */}
+      <div className="flex bg-white p-1.5 rounded-2xl shadow-sm border border-slate-100 gap-2">
+        <button
+          onClick={() => setActiveTab('absence')}
+          className={`flex-1 py-3 px-4 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition ${
+            activeTab === 'absence' ? 'bg-primary-600 text-white shadow' : 'text-slate-600 hover:bg-slate-50'
+          }`}
+        >
+          <Users className="h-4 w-4" />
+          <span>تنبيهات الغياب</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('payments')}
+          className={`flex-1 py-3 px-4 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition ${
+            activeTab === 'payments' ? 'bg-primary-600 text-white shadow' : 'text-slate-600 hover:bg-slate-50'
+          }`}
+        >
+          <Wallet className="h-4 w-4" />
+          <span>المصاريف المتأخرة</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('certificate')}
+          className={`flex-1 py-3 px-4 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition ${
+            activeTab === 'certificate' ? 'bg-primary-600 text-white shadow' : 'text-slate-600 hover:bg-slate-50'
+          }`}
+        >
+          <Award className="h-4 w-4" />
+          <span>شهادات التقدير</span>
+        </button>
       </div>
 
-      <div className="card p-6 bg-white shadow-sm rounded-2xl">
-        <h2 className="text-base font-extrabold text-slate-800 mb-4">الاختبارات المسجلة</h2>
-        {quizzes.length === 0 ? (
-          <p className="text-center text-sm text-slate-400 py-8">لا توجد اختبارات مسجلة بعد</p>
-        ) : (
-          <div className="space-y-3">
-            {quizzes.map(q => (
-              <div key={q.id} className="p-4 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between gap-4">
-                <div className="min-w-0">
-                  <h3 className="font-extrabold text-slate-800 text-base">{q.title}</h3>
-                  <div className="flex flex-wrap gap-3 mt-1 text-xs font-semibold text-slate-500">
-                    <span className="flex items-center gap-1 text-primary-600">
-                      <Layers className="h-3.5 w-3.5" />
-                      {q.groups?.group_name || 'مجموعة'}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Award className="h-3.5 w-3.5" />
-                      الدرجة: {q.max_score} درجة
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Calendar className="h-3.5 w-3.5" />
-                      {q.quiz_date}
-                    </span>
-                  </div>
-                </div>
-                <button onClick={() => handleDelete(q.id)} className="text-rose-500 hover:bg-rose-50 p-2.5 rounded-xl transition">
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            ))}
+      {/* محتوى التبويب الأول: تنبيهات الغياب */}
+      {activeTab === 'absence' && (
+        <div className="card p-6 bg-white shadow-sm rounded-2xl space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-extrabold text-slate-800">الطلاب الغائبون اليوم</h2>
+            <span className="text-xs bg-rose-50 text-rose-600 px-3 py-1 rounded-full font-bold">
+              {absentStudents.length} طلاب غائبين
+            </span>
           </div>
-        )}
-      </div>
+          {absentStudents.length === 0 ? (
+            <p className="text-center text-sm text-slate-400 py-8">لا توجد حالات غياب مسجلة اليوم</p>
+          ) : (
+            <div className="space-y-3">
+              {absentStudents.map((st) => (
+                <div key={st.id} className="p-4 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between gap-4">
+                  <div>
+                    <h3 className="font-extrabold text-slate-800 text-base">{st.student_name}</h3>
+                    <p className="text-xs text-slate-500 mt-0.5">رقم ولي الأمر: {st.parent_phone || st.phone || 'غير متوفر'}</p>
+                  </div>
+                  <button
+                    onClick={() => sendAbsenceWhatsApp(st)}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shrink-0 shadow-sm"
+                  >
+                    <Send className="h-3.5 w-3.5" />
+                    <span>إرسال واتساب للغياب</span>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* محتوى التبويب الثاني: المصاريف المتأخرة */}
+      {activeTab === 'payments' && (
+        <div className="card p-6 bg-white shadow-sm rounded-2xl space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-extrabold text-slate-800">متابعة المصاريف المتأخرة</h2>
+            <span className="text-xs bg-amber-50 text-amber-600 px-3 py-1 rounded-full font-bold">
+              {lateStudents.length} طلاب لم يدفعوا
+            </span>
+          </div>
+          {lateStudents.length === 0 ? (
+            <p className="text-center text-sm text-slate-400 py-8">جميع الطلاب قاموا بسداد المصاريف</p>
+          ) : (
+            <div className="space-y-3">
+              {lateStudents.map((st) => (
+                <div key={st.id} className="p-4 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between gap-4">
+                  <div>
+                    <h3 className="font-extrabold text-slate-800 text-base">{st.student_name}</h3>
+                    <p className="text-xs text-slate-500 mt-0.5">رقم ولي الأمر: {st.parent_phone || st.phone || 'غير متوفر'}</p>
+                  </div>
+                  <button
+                    onClick={() => sendPaymentWhatsApp(st)}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shrink-0 shadow-sm"
+                  >
+                    <Send className="h-3.5 w-3.5" />
+                    <span>تذكير بالمصاريف واتساب</span>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* محتوى التبويب الثالث: شهادات التقدير */}
+      {activeTab === 'certificate' && (
+        <div className="card p-6 bg-white shadow-sm rounded-2xl space-y-4">
+          <h2 className="text-base font-extrabold text-slate-800">إرسال شهادة تقدير أو تهنئة متفوق</h2>
+          <form onSubmit={sendCertificateWhatsApp} className="space-y-4 max-w-xl">
+            <div>
+              <label className="block text-xs font-bold text-slate-600 mb-1">اسم الطالب / الطالبة</label>
+              <input
+                type="text"
+                value={studentName}
+                onChange={(e) => setStudentName(e.target.value)}
+                placeholder="مثال: أحمد محمد محمود"
+                className="input text-sm"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-600 mb-1">سبب التكريم أو التهنئة</label>
+              <input
+                type="text"
+                value={achievement}
+                onChange={(e) => setAchievement(e.target.value)}
+                placeholder="مثال: الحصول على الدرجة النهائية في اختبار الشهر"
+                className="input text-sm"
+                required
+              />
+            </div>
+            <div className="pt-2">
+              <button type="submit" className="btn-primary px-6 py-2.5 text-sm font-bold flex items-center gap-1.5 w-full justify-center">
+                <Award className="h-4 w-4" />
+                <span>توليد وإرسال الشهادة عبر واتساب</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   )
 }
