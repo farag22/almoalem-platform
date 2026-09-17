@@ -84,30 +84,29 @@ export default function AdminDashboard() {
     setBusyId(null)
   }
 
-  // دالة تفعيل الاشتراك الشهري (30 يوماً / 100 ج.م) المضمونة مع التحديث المحلي الفوري
+  // دالة تفعيل الاشتراك الشهري المباشرة والصريحة
   const handleActivateSubscription = async (teacherId) => {
     setBusyId(teacherId)
     const newExpiry = new Date()
     newExpiry.setDate(newExpiry.getDate() + 30)
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('profiles')
       .update({
         subscription_status: 'active',
         subscription_end_date: newExpiry.toISOString(),
-        role: 'teacher',
       })
-      .eq('id', String(teacherId))
+      .eq('id', teacherId)
+      .select()
 
     if (error) {
       toast('تعذر تفعيل الاشتراك: ' + error.message, 'error')
     } else {
       toast('تم تفعيل الاشتراك بنجاح لمدة 30 يوماً!')
-      // تحديث الحالة محلياً في الواجهة فوراً ليتغير اللون إلى نشط
       setTeachers((prev) =>
         prev.map((t) =>
           t.id === teacherId
-            ? { ...t, subscription_status: 'active', subscription_end_date: newExpiry.toISOString(), role: 'teacher' }
+            ? { ...t, subscription_status: 'active', subscription_end_date: newExpiry.toISOString() }
             : t
         )
       )
@@ -226,182 +225,80 @@ export default function AdminDashboard() {
           {teachers.length === 0 ? (
             <p className="py-10 text-center text-sm text-slate-400">لا يوجد معلمون مسجلون بعد</p>
           ) : (
-            <>
-              {/* Desktop Table View */}
-              <div className="hidden md:block overflow-x-auto">
-                <table className="w-full min-w-[900px] text-right">
-                  <thead className="border-b border-slate-100 bg-slate-50">
-                    <tr>
-                      <th className="px-6 py-3.5 text-xs font-bold text-slate-500">اسم المعلم</th>
-                      <th className="px-6 py-3.5 text-xs font-bold text-slate-500">البريد الإلكتروني</th>
-                      <th className="px-6 py-3.5 text-xs font-bold text-slate-500">حالة الاشتراك</th>
-                      <th className="px-6 py-3.5 text-xs font-bold text-slate-500 text-center">إجراءات التفعيل والتحكم</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {teachers.map((t) => {
-                      const isSelf = t.id === profile?.id
-                      const isActiveSub = t.subscription_status === 'active'
+            <div className="block divide-y divide-slate-100 p-4 space-y-4">
+              {teachers.map((t) => {
+                const isSelf = t.id === profile?.id
+                const isActiveSub = t.subscription_status === 'active'
 
-                      return (
-                        <tr key={t.id} className="transition hover:bg-slate-50/60">
-                          <td className="px-6 py-4 font-bold text-slate-800">
-                            <div className="flex items-center gap-3">
-                              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-sm font-extrabold text-slate-600">
-                                {(t.full_name || 'م').charAt(0)}
-                              </span>
-                              <span className="truncate max-w-[180px]">
-                                {t.full_name || 'معلم جديد'}
-                                {isSelf && (
-                                  <span className="mr-2 rounded-full bg-primary-50 px-2 py-0.5 text-[10px] font-bold text-primary-600">
-                                    أنت
-                                  </span>
-                                )}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 text-xs text-slate-600 font-medium" dir="ltr">
-                            {t.email || '—'}
-                          </td>
-                          <td className="px-6 py-4">
-                            {isActiveSub ? (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-extrabold text-emerald-700">
-                                <CheckCircle2 className="h-3.5 w-3.5" />
-                                مشترك نشط
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-3 py-1 text-xs font-extrabold text-rose-700">
-                                <ShieldAlert className="h-3.5 w-3.5" />
-                                تجريبي / منتهي
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex justify-center gap-2 items-center">
-                              <button
-                                onClick={() => handleActivateSubscription(t.id)}
-                                disabled={busyId === t.id}
-                                className="rounded-lg bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-emerald-700 shadow-sm"
-                              >
-                                تفعيل (100 ج.م)
-                              </button>
-
-                              {t.role !== 'admin' && (
-                                <button
-                                  onClick={() => setRole(t, 'admin')}
-                                  disabled={busyId === t.id}
-                                  className="rounded-lg bg-violet-50 px-3.5 py-2 text-xs font-bold text-violet-700 transition hover:bg-violet-100"
-                                >
-                                  ترقية لأدمن
-                                </button>
-                              )}
-
-                              {t.role === 'disabled' ? (
-                                <button
-                                  onClick={() => setRole(t, 'teacher')}
-                                  disabled={busyId === t.id}
-                                  className="rounded-lg bg-emerald-50 px-3.5 py-2 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100"
-                                >
-                                  تفعيل الحساب
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => setRole(t, 'disabled')}
-                                  disabled={busyId === t.id || t.role === 'admin'}
-                                  className={`rounded-lg px-3.5 py-2 text-xs font-bold transition ${
-                                    t.role === 'admin'
-                                      ? 'cursor-not-allowed bg-slate-100 text-slate-300'
-                                      : 'bg-rose-50 text-rose-700 hover:bg-rose-100'
-                                  }`}
-                                >
-                                  تعطيل
-                                </button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Mobile View */}
-              <div className="block md:hidden divide-y divide-slate-100 p-4 space-y-4">
-                {teachers.map((t) => {
-                  const isSelf = t.id === profile?.id
-                  const isActiveSub = t.subscription_status === 'active'
-
-                  return (
-                    <div key={t.id} className="bg-slate-50/70 border border-slate-100 rounded-2xl p-4 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-100 text-base font-extrabold text-primary-700">
-                            {(t.full_name || 'م').charAt(0)}
-                          </span>
-                          <div>
-                            <p className="font-extrabold text-slate-800 text-sm">
-                              {t.full_name || 'معلم جديد'}
-                              {isSelf && <span className="mr-1.5 text-[10px] text-primary-600 font-bold">(أنت)</span>}
-                            </p>
-                            <p className="text-xs text-slate-500 font-medium" dir="ltr">{t.email}</p>
-                          </div>
-                        </div>
+                return (
+                  <div key={t.id} className="bg-slate-50/70 border border-slate-100 rounded-2xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-100 text-base font-extrabold text-primary-700">
+                          {(t.full_name || 'م').charAt(0)}
+                        </span>
                         <div>
-                          {isActiveSub ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-extrabold text-emerald-700">
-                              نشط
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2.5 py-1 text-[11px] font-extrabold text-rose-700">
-                              منتهي
-                            </span>
-                          )}
+                          <p className="font-extrabold text-slate-800 text-sm">
+                            {t.full_name || 'معلم جديد'}
+                            {isSelf && <span className="mr-1.5 text-[10px] text-primary-600 font-bold">(أنت)</span>}
+                          </p>
+                          <p className="text-xs text-slate-500 font-medium" dir="ltr">{t.email}</p>
                         </div>
                       </div>
-
-                      <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-slate-200/60">
-                        <button
-                          onClick={() => handleActivateSubscription(t.id)}
-                          disabled={busyId === t.id}
-                          className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-xl text-xs font-bold transition shadow-sm text-center"
-                        >
-                          تفعيل الاشتراك (100 ج.م)
-                        </button>
-
-                        {t.role !== 'admin' && (
-                          <button
-                            onClick={() => setRole(t, 'admin')}
-                            disabled={busyId === t.id}
-                            className="bg-violet-50 hover:bg-violet-100 text-violet-700 px-3 py-2 rounded-xl text-xs font-bold transition"
-                          >
-                            أدمن
-                          </button>
-                        )}
-
-                        {t.role === 'disabled' ? (
-                          <button
-                            onClick={() => setRole(t, 'teacher')}
-                            disabled={busyId === t.id}
-                            className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-2 rounded-xl text-xs font-bold transition"
-                          >
-                            فك التعطيل
-                          </button>
+                      <div>
+                        {isActiveSub ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-extrabold text-emerald-700">
+                            مشترك نشط
+                          </span>
                         ) : (
-                          <button
-                            onClick={() => setRole(t, 'disabled')}
-                            disabled={busyId === t.id || t.role === 'admin'}
-                            className="bg-rose-50 hover:bg-rose-100 text-rose-700 px-3 py-2 rounded-xl text-xs font-bold transition"
-                          >
-                            تعطيل
-                          </button>
+                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-extrabold text-amber-700">
+                            تجريبي / غير مفعل
+                          </span>
                         )}
                       </div>
                     </div>
-                  )
-                })}
-              </div>
-            </>
+
+                    <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-slate-200/60">
+                      <button
+                        onClick={() => handleActivateSubscription(t.id)}
+                        disabled={busyId === t.id}
+                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-xl text-xs font-bold transition shadow-sm text-center"
+                      >
+                        {isActiveSub ? 'تجديد الاشتراك (100 ج.م)' : 'تفعيل الاشتراك (100 ج.م)'}
+                      </button>
+
+                      {t.role !== 'admin' && (
+                        <button
+                          onClick={() => setRole(t, 'admin')}
+                          disabled={busyId === t.id}
+                          className="bg-violet-50 hover:bg-violet-100 text-violet-700 px-3 py-2 rounded-xl text-xs font-bold transition"
+                        >
+                          أدمن
+                        </button>
+                      )}
+
+                      {t.role === 'disabled' ? (
+                        <button
+                          onClick={() => setRole(t, 'teacher')}
+                          disabled={busyId === t.id}
+                          className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-2 rounded-xl text-xs font-bold transition"
+                        >
+                          فك التعطيل
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => setRole(t, 'disabled')}
+                          disabled={busyId === t.id || t.role === 'admin'}
+                          className="bg-rose-50 hover:bg-rose-100 text-rose-700 px-3 py-2 rounded-xl text-xs font-bold transition"
+                        >
+                          تعطيل
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           )}
         </div>
       </main>
