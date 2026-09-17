@@ -84,7 +84,7 @@ export default function AdminDashboard() {
     setBusyId(null)
   }
 
-  // دالة تفعيل الاشتراك عبر دالة الـ RPC المباشرة لضمان القبول الفوري
+  // دالة تفعيل الاشتراك عبر دالة الـ RPC المباشرة
   const handleActivateSubscription = async (teacherId) => {
     setBusyId(teacherId)
     
@@ -242,11 +242,13 @@ export default function AdminDashboard() {
                       <div>
                         {isActiveSub ? (
                           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-extrabold text-emerald-700">
+                            <CheckCircle2 className="h-3.5 w-3.5" />
                             مشترك نشط
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-extrabold text-amber-700">
-                            تجريبي / غير مفعل
+                            <ShieldAlert className="h-3.5 w-3.5" />
+                            فترة تجريبية
                           </span>
                         )}
                       </div>
@@ -256,7 +258,11 @@ export default function AdminDashboard() {
                       <button
                         onClick={() => handleActivateSubscription(t.id)}
                         disabled={busyId === t.id}
-                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-xl text-xs font-bold transition shadow-sm text-center"
+                        className={`flex-1 py-2 rounded-xl text-xs font-bold transition shadow-sm text-center ${
+                          isActiveSub
+                            ? 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                            : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                        }`}
                       >
                         {isActiveSub ? 'تجديد الاشتراك (100 ج.م)' : 'تفعيل الاشتراك (100 ج.م)'}
                       </button>
@@ -285,7 +291,7 @@ export default function AdminDashboard() {
                           disabled={busyId === t.id || t.role === 'admin'}
                           className="bg-rose-50 hover:bg-rose-100 text-rose-700 px-3 py-2 rounded-xl text-xs font-bold transition"
                         >
-                          تعطيل
+                          تعطيل الحساب
                         </button>
                       )}
                     </div>
