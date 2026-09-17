@@ -75,15 +75,16 @@ export default function AdminDashboard() {
       .from('profiles')
       .update({ role })
       .eq('id', teacher.id)
-    if (error) toast('تعذر تحديث الحساب: ' + error.message, 'error')
-    else {
+    if (error) {
+      toast('تعذر تحديث الحساب: ' + error.message, 'error')
+    } else {
       toast('تم تحديث الحساب بنجاح')
       load()
     }
     setBusyId(null)
   }
 
-  // دالة تفعيل الاشتراك الشهري (30 يوماً / 100 ج.م) بضغطة زر
+  // دالة تفعيل الاشتراك الشهري (30 يوماً / 100 ج.م) المضمونة مع التحديث المحلي الفوري
   const handleActivateSubscription = async (teacherId) => {
     setBusyId(teacherId)
     const newExpiry = new Date()
@@ -96,12 +97,20 @@ export default function AdminDashboard() {
         subscription_end_date: newExpiry.toISOString(),
         role: 'teacher',
       })
-      .eq('id', teacherId)
+      .eq('id', String(teacherId))
 
     if (error) {
       toast('تعذر تفعيل الاشتراك: ' + error.message, 'error')
     } else {
       toast('تم تفعيل الاشتراك بنجاح لمدة 30 يوماً!')
+      // تحديث الحالة محلياً في الواجهة فوراً ليتغير اللون إلى نشط
+      setTeachers((prev) =>
+        prev.map((t) =>
+          t.id === teacherId
+            ? { ...t, subscription_status: 'active', subscription_end_date: newExpiry.toISOString(), role: 'teacher' }
+            : t
+        )
+      )
       load()
     }
     setBusyId(null)
@@ -218,7 +227,7 @@ export default function AdminDashboard() {
             <p className="py-10 text-center text-sm text-slate-400">لا يوجد معلمون مسجلون بعد</p>
           ) : (
             <>
-              {/* Desktop Table */}
+              {/* Desktop Table View */}
               <div className="hidden md:block overflow-x-auto">
                 <table className="w-full min-w-[900px] text-right">
                   <thead className="border-b border-slate-100 bg-slate-50">
