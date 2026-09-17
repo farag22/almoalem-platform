@@ -39,7 +39,7 @@ export default function Dashboard() {
 
   const daysLeft = calculateDaysLeft()
 
-  // جلب أحدث بيانات المعلم مباشرة لضمان ظهور الصورة والاسم المحدثين فوراً
+  // جلب أحدث بيانات المعلم من جدول profiles مباشرة لتوحيد المصدر مع الأدمن
   useEffect(() => {
     async function fetchLatestProfile() {
       if (!user?.email && !teacherId) return
