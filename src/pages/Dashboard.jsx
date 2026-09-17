@@ -39,17 +39,17 @@ export default function Dashboard() {
 
   const daysLeft = calculateDaysLeft()
 
-  // جلب أحدث بيانات المعلم من جدول profiles مباشرة لتوحيد المصدر مع الأدمن
+  // جلب أحدث بيانات المعلم مباشرة باستخدام user.id لضمان جلب حالة الاشتراك المحدثة بدقة
   useEffect(() => {
     async function fetchLatestProfile() {
-      if (!user?.email && !teacherId) return
-      let query = supabase.from('profiles').select('id, full_name, email, avatar_url, role, created_at, subscription_status')
-      if (teacherId) {
-        query = query.eq('id', teacherId)
-      } else if (user?.email) {
-        query = query.eq('email', user.email)
-      }
-      const { data } = await query.maybeSingle()
+      const targetId = user?.id || teacherId
+      if (!targetId) return
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, avatar_url, role, created_at, subscription_status')
+        .eq('id', targetId)
+        .maybeSingle()
+
       if (data) {
         setCurrentProfile(data)
       } else if (profile) {
@@ -63,7 +63,7 @@ export default function Dashboard() {
     setLoading(true)
     const today = new Date().toISOString().slice(0, 10)
 
-    const targetTeacherId = currentProfile?.id || teacherId
+    const targetTeacherId = currentProfile?.id || teacherId || user?.id
 
     const { data: myStudentIds } = await supabase
       .from('students')
@@ -119,10 +119,10 @@ export default function Dashboard() {
   }
 
   useEffect(() => {
-    if (teacherId || currentProfile?.id) {
+    if (teacherId || currentProfile?.id || user?.id) {
       load()
     }
-  }, [teacherId, currentProfile?.id])
+  }, [teacherId, currentProfile?.id, user?.id])
 
   if (loading) {
     return (
@@ -178,7 +178,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      {/* شريط تنبيه صلاحية التجربة - يظهر فقط إذا لم يكن الاشتراك نشطاً */}
+      {/* شريط تنبيه صلاحية التجربة - يختفي تماماً وبشكل قاطع إذا كان الاشتراك نشطاً */}
       {!isSubscriptionActive && (
         <div className={`p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 border shadow-sm ${
           daysLeft <= 5 ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-amber-50 border-amber-200 text-amber-800'
