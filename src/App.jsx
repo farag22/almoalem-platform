@@ -12,6 +12,7 @@ import SessionsPage from './pages/SessionsPage'
 import AdminDashboard from './pages/AdminDashboard'
 import LandingPage from './pages/LandingPage'
 import ProfilePage from './pages/ProfilePage'
+import SubscriptionExpiredPage from './pages/SubscriptionExpiredPage'
 
 // استيراد الصفحات الأساسية الخاصة بإدارة السنتر
 import TimetablePage from './pages/TimetablePage'
@@ -39,6 +40,33 @@ function ProtectedRoute({ children }) {
   if (loading) return <FullScreenSpinner />
   if (!user) return <Navigate to="/teacher/login" replace />
   if (profile?.role === 'disabled') return <Navigate to="/disabled" replace />
+  return children
+}
+
+// مكون التحقق من حالة الاشتراك وحفظ البيانات لمدة 6 أشهر
+function SubscriptionCheckRoute({ children }) {
+  const { user, profile, loading } = useAuth()
+  if (loading) return <FullScreenSpinner />
+  if (!user) return <Navigate to="/teacher/login" replace />
+  if (profile?.role === 'admin') return children // الأدمن مستثنى
+  if (profile?.role === 'disabled') return <Navigate to="/disabled" replace />
+
+  // إذا كان الحساب مفعل بانتظام
+  if (profile?.subscription_status === 'active') {
+    return children
+  }
+
+  // حساب ما إذا كانت الـ 30 يوماً الأولى قد انتهت
+  if (profile?.created_at) {
+    const createdDate = new Date(profile.created_at)
+    const expiryDate = new Date(createdDate.getTime() + 30 * 24 * 60 * 60 * 1000) // 30 يوم تجربة
+    const now = new Date()
+
+    if (now > expiryDate) {
+      return <Navigate to="/subscription-expired" replace />
+    }
+  }
+
   return children
 }
 
@@ -101,6 +129,7 @@ function AppRoutes() {
       <Route path="/student" element={<ParentView />} />
       <Route path="/student/:code" element={<ParentView />} />
       <Route path="/disabled" element={<DisabledScreen />} />
+      <Route path="/subscription-expired" element={<SubscriptionExpiredPage />} />
       <Route
         path="/admin"
         element={
@@ -113,7 +142,9 @@ function AppRoutes() {
         path="/dashboard"
         element={
           <ProtectedRoute>
-            <DashboardLayout />
+            <SubscriptionCheckRoute>
+              <DashboardLayout />
+            </SubscriptionCheckRoute>
           </ProtectedRoute>
         }
       >
