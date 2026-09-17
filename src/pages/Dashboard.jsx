@@ -39,7 +39,7 @@ export default function Dashboard() {
 
   const daysLeft = calculateDaysLeft()
 
-  // جلب أحدث بيانات المعلم مباشرة وتجاوز أي تخزين مؤقت لضمان مزامنة حالة الاشتراك
+  // جلب كافة بيانات المعلم بـ (*) لضمان ظهور الصورة والاسم وحالة الاشتراك بدقة تامة
   useEffect(() => {
     async function fetchLatestProfile() {
       const targetId = user?.id || teacherId
