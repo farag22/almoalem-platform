@@ -84,29 +84,23 @@ export default function AdminDashboard() {
     setBusyId(null)
   }
 
-  // دالة تفعيل الاشتراك الشهري المباشرة والصريحة
+  // دالة تفعيل الاشتراك عبر دالة الـ RPC المباشرة لضمان القبول الفوري
   const handleActivateSubscription = async (teacherId) => {
     setBusyId(teacherId)
-    const newExpiry = new Date()
-    newExpiry.setDate(newExpiry.getDate() + 30)
-
-    const { data, error } = await supabase
-      .from('profiles')
-      .update({
-        subscription_status: 'active',
-        subscription_end_date: newExpiry.toISOString(),
-      })
-      .eq('id', teacherId)
-      .select()
+    
+    const { error } = await supabase.rpc('force_activate_subscription', {
+      teacher_id: teacherId
+    })
 
     if (error) {
-      toast('تعذر تفعيل الاشتراك: ' + error.message, 'error')
+      toast('تعذر التفعيل: ' + error.message, 'error')
     } else {
       toast('تم تفعيل الاشتراك بنجاح لمدة 30 يوماً!')
+      const newExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
       setTeachers((prev) =>
         prev.map((t) =>
           t.id === teacherId
-            ? { ...t, subscription_status: 'active', subscription_end_date: newExpiry.toISOString() }
+            ? { ...t, subscription_status: 'active', subscription_end_date: newExpiry }
             : t
         )
       )
