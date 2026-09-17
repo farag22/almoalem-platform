@@ -11,6 +11,7 @@ import {
   UserX,
   Clock,
   QrCode,
+  MessageCircle,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -25,11 +26,24 @@ export default function Dashboard() {
   const [todayAttendance, setTodayAttendance] = useState([])
   const [loading, setLoading] = useState(true)
 
+  // حساب الأيام المتبقية للتجربة
+  const calculateDaysLeft = () => {
+    const profileData = currentProfile || profile
+    if (!profileData?.created_at) return 30
+    const created = new Date(profileData.created_at)
+    const expiry = new Date(created.getTime() + 30 * 24 * 60 * 60 * 1000)
+    const diffTime = expiry - new Date()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    return diffDays > 0 ? diffDays : 0
+  }
+
+  const daysLeft = calculateDaysLeft()
+
   // جلب أحدث بيانات المعلم مباشرة لضمان ظهور الصورة والاسم المحدثين فوراً
   useEffect(() => {
     async function fetchLatestProfile() {
       if (!user?.email && !teacherId) return
-      let query = supabase.from('teachers').select('id, full_name, email, avatar_url, role')
+      let query = supabase.from('teachers').select('id, full_name, email, avatar_url, role, created_at, subscription_status')
       if (teacherId) {
         query = query.eq('id', teacherId)
       } else if (user?.email) {
@@ -151,15 +165,47 @@ export default function Dashboard() {
     },
   ]
 
+  const activeProfile = currentProfile || profile
+
   // تحديد الاسم وصورة المعلم مع إعطاء الأولوية للـ full_name و avatar_url المحفوظين
-  const displayName = currentProfile?.full_name && currentProfile.full_name.trim() !== ''
-    ? currentProfile.full_name
+  const displayName = activeProfile?.full_name && activeProfile.full_name.trim() !== ''
+    ? activeProfile.full_name
     : (user?.email || 'أستاذي الفاضل');
 
-  const displayAvatar = currentProfile?.avatar_url;
+  const displayAvatar = activeProfile?.avatar_url;
 
   return (
     <div className="space-y-6">
+      {/* شريط تنبيه صلاحية التجربة */}
+      {activeProfile?.subscription_status !== 'active' && (
+        <div className={`p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 border shadow-sm ${
+          daysLeft <= 5 ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-amber-50 border-amber-200 text-amber-800'
+        }`}>
+          <div className="flex items-center gap-3">
+            <div className={`p-2.5 rounded-xl ${daysLeft <= 5 ? 'bg-rose-100 text-rose-600' : 'bg-amber-100 text-amber-600'}`}>
+              <Wallet className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="font-extrabold text-sm">
+                {daysLeft > 0 ? `فترة التجربة نشطة: متبقي ${daysLeft} يوماً على انتهاء اشتراكك` : `انتهت فترة التجربة المجانية`}
+              </h2>
+              <p className="text-xs opacity-80 mt-0.5">
+                قيمة تجديد الاشتراك الشهري 100 جنيه. لتفادي توقف المنصة تواصل معنا عبر الواتساب لتفعيل الحساب.
+              </p>
+            </div>
+          </div>
+          <a
+            href="https://wa.me/201115413154?text=السلام%20عليكم،%20أرغب%20في%20تجديد%20اشتراك%20منصة%20السنتر%20(100%20جنيه)"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition shrink-0 shadow-sm flex items-center gap-1.5"
+          >
+            <MessageCircle className="w-4 h-4" />
+            <span>تفعيل عبر الواتساب (01115413154)</span>
+          </a>
+        </div>
+      )}
+
       {/* Welcome Card */}
       <div className="card flex flex-col gap-4 bg-gradient-to-l from-primary-700 to-indigo-900 p-6 text-white sm:flex-row sm:items-center sm:justify-between shadow-lg">
         <div className="flex items-center gap-4">
