@@ -43,7 +43,7 @@ export default function Dashboard() {
   useEffect(() => {
     async function fetchLatestProfile() {
       if (!user?.email && !teacherId) return
-      let query = supabase.from('teachers').select('id, full_name, email, avatar_url, role, created_at, subscription_status')
+      let query = supabase.from('profiles').select('id, full_name, email, avatar_url, role, created_at, subscription_status')
       if (teacherId) {
         query = query.eq('id', teacherId)
       } else if (user?.email) {
@@ -167,17 +167,19 @@ export default function Dashboard() {
 
   const activeProfile = currentProfile || profile
 
-  // تحديد الاسم وصورة المعلم مع إعطاء الأولوية للـ full_name و avatar_url المحفوظين
   const displayName = activeProfile?.full_name && activeProfile.full_name.trim() !== ''
     ? activeProfile.full_name
     : (user?.email || 'أستاذي الفاضل');
 
   const displayAvatar = activeProfile?.avatar_url;
 
+  // التحقق الدقيق هل الاشتراك نشط تماماً أم لا
+  const isSubscriptionActive = activeProfile?.subscription_status === 'active';
+
   return (
     <div className="space-y-6">
-      {/* شريط تنبيه صلاحية التجربة */}
-      {activeProfile?.subscription_status !== 'active' && (
+      {/* شريط تنبيه صلاحية التجربة - يظهر فقط إذا لم يكن الاشتراك نشطاً */}
+      {!isSubscriptionActive && (
         <div className={`p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 border shadow-sm ${
           daysLeft <= 5 ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-amber-50 border-amber-200 text-amber-800'
         }`}>
@@ -209,7 +211,6 @@ export default function Dashboard() {
       {/* Welcome Card */}
       <div className="card flex flex-col gap-4 bg-gradient-to-l from-primary-700 to-indigo-900 p-6 text-white sm:flex-row sm:items-center sm:justify-between shadow-lg">
         <div className="flex items-center gap-4">
-          {/* دائرة الصورة الشخصية */}
           <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white/10 text-xl font-bold text-white overflow-hidden border-2 border-white/20 shadow-inner">
             {displayAvatar ? (
               <img src={displayAvatar} alt="Profile" className="h-full w-full object-cover" />
