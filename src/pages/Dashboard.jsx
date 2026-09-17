@@ -39,14 +39,15 @@ export default function Dashboard() {
 
   const daysLeft = calculateDaysLeft()
 
-  // جلب أحدث بيانات المعلم مباشرة باستخدام user.id لضمان جلب حالة الاشتراك المحدثة بدقة
+  // جلب أحدث بيانات المعلم مباشرة وتجاوز أي تخزين مؤقت لضمان مزامنة حالة الاشتراك
   useEffect(() => {
     async function fetchLatestProfile() {
       const targetId = user?.id || teacherId
       if (!targetId) return
+      
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, email, avatar_url, role, created_at, subscription_status')
+        .select('*')
         .eq('id', targetId)
         .maybeSingle()
 
