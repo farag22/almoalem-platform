@@ -39,20 +39,23 @@ export default function Dashboard() {
 
   const daysLeft = calculateDaysLeft()
 
-  // جلب كافة بيانات المعلم بـ (*) لضمان ظهور الصورة والاسم وحالة الاشتراك بدقة تامة
+  // جلب أحدث بيانات المعلم مع دمج بيانات الـ profile الأساسية لضمان عدم ضياع الاسم أو الصورة
   useEffect(() => {
     async function fetchLatestProfile() {
       const targetId = user?.id || teacherId
-      if (!targetId) return
+      if (!targetId) {
+        if (profile) setCurrentProfile(profile)
+        return
+      }
       
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', targetId)
         .maybeSingle()
 
       if (data) {
-        setCurrentProfile(data)
+        setCurrentProfile({ ...profile, ...data })
       } else if (profile) {
         setCurrentProfile(profile)
       }
@@ -168,18 +171,19 @@ export default function Dashboard() {
 
   const activeProfile = currentProfile || profile
 
-  const displayName = activeProfile?.full_name && activeProfile.full_name.trim() !== ''
+  // الاعتماد المباشر على full_name والـ avatar_url من الـ profile المدمج
+  const displayName = activeProfile?.full_name?.trim()
     ? activeProfile.full_name
-    : (user?.email || 'أستاذي الفاضل');
+    : (profile?.full_name?.trim() || 'فرج أبو رحيم');
 
-  const displayAvatar = activeProfile?.avatar_url;
+  const displayAvatar = activeProfile?.avatar_url || profile?.avatar_url;
 
-  // التحقق الدقيق هل الاشتراك نشط تماماً أم لا
-  const isSubscriptionActive = activeProfile?.subscription_status === 'active';
+  // التحقق من حالة الاشتراك لإخفاء الشريط تماماً عند التنشيط
+  const isSubscriptionActive = activeProfile?.subscription_status === 'active' || profile?.subscription_status === 'active';
 
   return (
     <div className="space-y-6">
-      {/* شريط تنبيه صلاحية التجربة - يختفي تماماً وبشكل قاطع إذا كان الاشتراك نشطاً */}
+      {/* شريط تنبيه صلاحية التجربة - يختفي تماماً إذا كان الاشتراك نشطاً */}
       {!isSubscriptionActive && (
         <div className={`p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 border shadow-sm ${
           daysLeft <= 5 ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-amber-50 border-amber-200 text-amber-800'
