@@ -68,7 +68,6 @@ export default function AdminDashboard() {
     load()
   }, [load])
 
-  // دالة تغيير الصلاحية أو تعطيل/تفعيل الحساب
   const setRole = async (teacher, role) => {
     if (!window.confirm(`تأكيد تغيير حالة الحساب لـ «${teacher.full_name || teacher.email}»؟`)) return
     setBusyId(teacher.id)
@@ -84,7 +83,7 @@ export default function AdminDashboard() {
     setBusyId(null)
   }
 
-  // دالة تفعيل الاشتراك الشهري (30 يوماً / 100 ج.م)
+  // دالة تفعيل الاشتراك الشهري (30 يوماً / 100 ج.م) بضغطة زر
   const handleActivateSubscription = async (teacherId) => {
     setBusyId(teacherId)
     const newExpiry = new Date()
@@ -127,10 +126,9 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100">
-      {/* Header */}
+    <div className="min-h-screen bg-slate-100 pb-12">
       <header className="bg-gradient-to-l from-slate-800 to-slate-900 px-4 py-5 text-white lg:px-8">
-        <div className="mx-auto flex max-w-6xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mx-auto flex max-w-7xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10">
               <ShieldCheck className="h-7 w-7" />
@@ -162,8 +160,7 @@ export default function AdminDashboard() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl space-y-6 px-4 py-6 lg:px-8">
-        {/* Welcome strip */}
+      <main className="mx-auto max-w-7xl space-y-6 px-4 py-6 lg:px-8">
         <div className="card flex items-center justify-between p-5">
           <div>
             <p className="text-sm font-semibold text-slate-500">مرحباً،</p>
@@ -172,39 +169,37 @@ export default function AdminDashboard() {
           <p className="hidden text-sm text-slate-400 sm:block">{fmtDate(new Date())}</p>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
           {cards.map((c) => (
-            <div key={c.label} className="card flex items-center gap-4 p-5">
-              <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${c.cls}`}>
-                <c.icon className="h-6 w-6" />
+            <div key={c.label} className="card flex items-center gap-3 p-4">
+              <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${c.cls}`}>
+                <c.icon className="h-5 w-5" />
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-semibold text-slate-500">{c.label}</p>
-                <p className="text-2xl font-extrabold text-slate-800">{c.value}</p>
+                <p className="text-[11px] font-semibold text-slate-500">{c.label}</p>
+                <p className="text-xl font-extrabold text-slate-800">{c.value}</p>
               </div>
             </div>
           ))}
         </div>
 
-        {/* Role breakdown */}
-        <div className="grid grid-cols-3 gap-4">
-          <div className="card p-4 text-center">
-            <p className="text-2xl font-extrabold text-violet-700">{stats?.admins ?? 0}</p>
-            <p className="text-xs font-bold text-slate-500">مديري نظام</p>
+        <div className="grid grid-cols-3 gap-2 sm:gap-4">
+          <div className="card p-3 sm:p-4 text-center">
+            <p className="text-xl sm:text-2xl font-extrabold text-violet-700">{stats?.admins ?? 0}</p>
+            <p className="text-[11px] sm:text-xs font-bold text-slate-500">مديري نظام</p>
           </div>
-          <div className="card p-4 text-center">
-            <p className="text-2xl font-extrabold text-emerald-700">{stats?.activeTeachers ?? 0}</p>
-            <p className="text-xs font-bold text-slate-500">معلمين مشتركين (نشطين)</p>
+          <div className="card p-3 sm:p-4 text-center">
+            <p className="text-xl sm:text-2xl font-extrabold text-emerald-700">{stats?.activeTeachers ?? 0}</p>
+            <p className="text-[11px] sm:text-xs font-bold text-slate-500">مشتركين نشطين</p>
           </div>
-          <div className="card p-4 text-center">
-            <p className="text-2xl font-extrabold text-rose-700">{stats?.disabled ?? 0}</p>
-            <p className="text-xs font-bold text-slate-500">حسابات معطّلة</p>
+          <div className="card p-3 sm:p-4 text-center">
+            <p className="text-xl sm:text-2xl font-extrabold text-rose-700">{stats?.disabled ?? 0}</p>
+            <p className="text-[11px] sm:text-xs font-bold text-slate-500">معطّلة</p>
           </div>
         </div>
 
-        {/* Teachers table */}
-        <div className="card overflow-hidden">
+        {/* Teachers management section */}
+        <div className="card overflow-hidden p-0">
           <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
             <div>
               <h2 className="text-lg font-extrabold text-slate-800">إدارة المعلمين والاشتراكات</h2>
@@ -222,113 +217,182 @@ export default function AdminDashboard() {
           {teachers.length === 0 ? (
             <p className="py-10 text-center text-sm text-slate-400">لا يوجد معلمون مسجلون بعد</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[850px]">
-                <thead className="border-b border-slate-100 bg-slate-50">
-                  <tr>
-                    <th className="th">المعلم</th>
-                    <th className="th">البريد الإلكتروني</th>
-                    <th className="th">حالة الاشتراك</th>
-                    <th className="th">تاريخ التسجيل</th>
-                    <th className="th text-center">إجراءات التفعيل والتحكم</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
-                  {teachers.map((t) => {
-                    const meta = ROLE_META[t.role] || ROLE_META.teacher
-                    const isSelf = t.id === profile?.id
-                    const isActiveSub = t.subscription_status === 'active'
+            <>
+              {/* Desktop Table */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full min-w-[900px] text-right">
+                  <thead className="border-b border-slate-100 bg-slate-50">
+                    <tr>
+                      <th className="px-6 py-3.5 text-xs font-bold text-slate-500">اسم المعلم</th>
+                      <th className="px-6 py-3.5 text-xs font-bold text-slate-500">البريد الإلكتروني</th>
+                      <th className="px-6 py-3.5 text-xs font-bold text-slate-500">حالة الاشتراك</th>
+                      <th className="px-6 py-3.5 text-xs font-bold text-slate-500 text-center">إجراءات التفعيل والتحكم</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {teachers.map((t) => {
+                      const isSelf = t.id === profile?.id
+                      const isActiveSub = t.subscription_status === 'active'
 
-                    return (
-                      <tr key={t.id} className="transition hover:bg-slate-50/60">
-                        <td className="td">
-                          <div className="flex items-center gap-3">
-                            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-sm font-extrabold text-slate-600">
-                              {(t.full_name || 'م').charAt(0)}
-                            </span>
-                            <span className="font-bold">
-                              {t.full_name || 'معلم جديد'}
-                              {isSelf && (
-                                <span className="mr-2 rounded-full bg-primary-50 px-2 py-0.5 text-[10px] font-bold text-primary-600">
-                                  أنت
-                                </span>
+                      return (
+                        <tr key={t.id} className="transition hover:bg-slate-50/60">
+                          <td className="px-6 py-4 font-bold text-slate-800">
+                            <div className="flex items-center gap-3">
+                              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-sm font-extrabold text-slate-600">
+                                {(t.full_name || 'م').charAt(0)}
+                              </span>
+                              <span className="truncate max-w-[180px]">
+                                {t.full_name || 'معلم جديد'}
+                                {isSelf && (
+                                  <span className="mr-2 rounded-full bg-primary-50 px-2 py-0.5 text-[10px] font-bold text-primary-600">
+                                    أنت
+                                  </span>
+                                )}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-xs text-slate-600 font-medium" dir="ltr">
+                            {t.email || '—'}
+                          </td>
+                          <td className="px-6 py-4">
+                            {isActiveSub ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-extrabold text-emerald-700">
+                                <CheckCircle2 className="h-3.5 w-3.5" />
+                                مشترك نشط
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-3 py-1 text-xs font-extrabold text-rose-700">
+                                <ShieldAlert className="h-3.5 w-3.5" />
+                                تجريبي / منتهي
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex justify-center gap-2 items-center">
+                              <button
+                                onClick={() => handleActivateSubscription(t.id)}
+                                disabled={busyId === t.id}
+                                className="rounded-lg bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-emerald-700 shadow-sm"
+                              >
+                                تفعيل (100 ج.م)
+                              </button>
+
+                              {t.role !== 'admin' && (
+                                <button
+                                  onClick={() => setRole(t, 'admin')}
+                                  disabled={busyId === t.id}
+                                  className="rounded-lg bg-violet-50 px-3.5 py-2 text-xs font-bold text-violet-700 transition hover:bg-violet-100"
+                                >
+                                  ترقية لأدمن
+                                </button>
                               )}
-                            </span>
+
+                              {t.role === 'disabled' ? (
+                                <button
+                                  onClick={() => setRole(t, 'teacher')}
+                                  disabled={busyId === t.id}
+                                  className="rounded-lg bg-emerald-50 px-3.5 py-2 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100"
+                                >
+                                  تفعيل الحساب
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => setRole(t, 'disabled')}
+                                  disabled={busyId === t.id || t.role === 'admin'}
+                                  className={`rounded-lg px-3.5 py-2 text-xs font-bold transition ${
+                                    t.role === 'admin'
+                                      ? 'cursor-not-allowed bg-slate-100 text-slate-300'
+                                      : 'bg-rose-50 text-rose-700 hover:bg-rose-100'
+                                  }`}
+                                >
+                                  تعطيل
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile View */}
+              <div className="block md:hidden divide-y divide-slate-100 p-4 space-y-4">
+                {teachers.map((t) => {
+                  const isSelf = t.id === profile?.id
+                  const isActiveSub = t.subscription_status === 'active'
+
+                  return (
+                    <div key={t.id} className="bg-slate-50/70 border border-slate-100 rounded-2xl p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-100 text-base font-extrabold text-primary-700">
+                            {(t.full_name || 'م').charAt(0)}
+                          </span>
+                          <div>
+                            <p className="font-extrabold text-slate-800 text-sm">
+                              {t.full_name || 'معلم جديد'}
+                              {isSelf && <span className="mr-1.5 text-[10px] text-primary-600 font-bold">(أنت)</span>}
+                            </p>
+                            <p className="text-xs text-slate-500 font-medium" dir="ltr">{t.email}</p>
                           </div>
-                        </td>
-                        <td className="td" dir="ltr">
-                          {t.email || '—'}
-                        </td>
-                        <td className="td">
+                        </div>
+                        <div>
                           {isActiveSub ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-extrabold text-emerald-700">
-                              <CheckCircle2 className="h-3.5 w-3.5" />
-                              مشترك نشط
+                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-extrabold text-emerald-700">
+                              نشط
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-3 py-1 text-xs font-extrabold text-rose-700">
-                              <ShieldAlert className="h-3.5 w-3.5" />
-                              تجريبي / منتهي
+                            <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2.5 py-1 text-[11px] font-extrabold text-rose-700">
+                              منتهي
                             </span>
                           )}
-                        </td>
-                        <td className="td text-xs text-slate-500">
-                          {t.created_at ? new Date(t.created_at).toLocaleDateString('ar-EG') : '—'}
-                        </td>
-                        <td className="td">
-                          <div className="flex justify-center gap-2 items-center">
-                            {/* زر تفعيل الاشتراك بعد دفع 100 جنيه */}
-                            <button
-                              onClick={() => handleActivateSubscription(t.id)}
-                              disabled={busyId === t.id}
-                              className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-emerald-700 shadow-sm"
-                              title="تفعيل الاشتراك لمدة 30 يوماً"
-                            >
-                              تفعيل (100 ج.م)
-                            </button>
+                        </div>
+                      </div>
 
-                            {/* ترقية لمدير */}
-                            {t.role !== 'admin' && (
-                              <button
-                                onClick={() => setRole(t, 'admin')}
-                                disabled={busyId === t.id}
-                                className="rounded-lg bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-700 transition hover:bg-violet-100"
-                              >
-                                ترقية لأدمن
-                              </button>
-                            )}
+                      <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-slate-200/60">
+                        <button
+                          onClick={() => handleActivateSubscription(t.id)}
+                          disabled={busyId === t.id}
+                          className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-xl text-xs font-bold transition shadow-sm text-center"
+                        >
+                          تفعيل الاشتراك (100 ج.م)
+                        </button>
 
-                            {/* زر التعطيل / التفعيل */}
-                            {t.role === 'disabled' ? (
-                              <button
-                                onClick={() => setRole(t, 'teacher')}
-                                disabled={busyId === t.id}
-                                className="rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100"
-                              >
-                                إلغاء التعطيل
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => setRole(t, 'disabled')}
-                                disabled={busyId === t.id || t.role === 'admin'}
-                                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
-                                  t.role === 'admin'
-                                    ? 'cursor-not-allowed bg-slate-100 text-slate-300'
-                                    : 'bg-rose-50 text-rose-700 hover:bg-rose-100'
-                                }`}
-                                title={t.role === 'admin' ? 'لا يمكن تعطيل مدير النظام' : 'تعطيل الحساب'}
-                              >
-                                تعطيل
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
+                        {t.role !== 'admin' && (
+                          <button
+                            onClick={() => setRole(t, 'admin')}
+                            disabled={busyId === t.id}
+                            className="bg-violet-50 hover:bg-violet-100 text-violet-700 px-3 py-2 rounded-xl text-xs font-bold transition"
+                          >
+                            أدمن
+                          </button>
+                        )}
+
+                        {t.role === 'disabled' ? (
+                          <button
+                            onClick={() => setRole(t, 'teacher')}
+                            disabled={busyId === t.id}
+                            className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-2 rounded-xl text-xs font-bold transition"
+                          >
+                            فك التعطيل
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => setRole(t, 'disabled')}
+                            disabled={busyId === t.id || t.role === 'admin'}
+                            className="bg-rose-50 hover:bg-rose-100 text-rose-700 px-3 py-2 rounded-xl text-xs font-bold transition"
+                          >
+                            تعطيل
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </>
           )}
         </div>
       </main>
