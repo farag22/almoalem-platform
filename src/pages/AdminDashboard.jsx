@@ -11,6 +11,8 @@ import {
   LogOut,
   LayoutDashboard,
   RefreshCw,
+  CheckCircle2,
+  ShieldAlert,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -36,23 +38,28 @@ export default function AdminDashboard() {
   const load = useCallback(async () => {
     setLoading(true)
     const [tRes, sRes, gRes, pRes] = await Promise.all([
-      supabase.from('teachers').select('*').order('created_at'),
+      supabase.from('profiles').select('*').order('created_at', { ascending: false }),
       supabase.from('students').select('id'),
       supabase.from('groups').select('id'),
-      supabase.from('payments').select('amount, is_paid'),
+      supabase.from('payments').select('amount, notes'),
     ])
-    setTeachers(tRes.data ?? [])
+    const profilesList = tRes.data ?? []
+    setTeachers(profilesList)
+
     const students = sRes.data ?? []
     const groups = gRes.data ?? []
     const payments = pRes.data ?? []
+
+    const totalCollected = payments.reduce((sum, x) => sum + (x.notes === 'تم الدفع' ? Number(x.amount || 0) : 0), 0)
+
     setStats({
-      teachers: tRes.data?.length ?? 0,
-      activeTeachers: tRes.data?.filter((t) => t.role === 'teacher').length ?? 0,
-      admins: tRes.data?.filter((t) => t.role === 'admin').length ?? 0,
-      disabled: tRes.data?.filter((t) => t.role === 'disabled').length ?? 0,
+      teachers: profilesList.length,
+      activeTeachers: profilesList.filter((t) => t.role !== 'disabled' && t.subscription_status === 'active').length,
+      admins: profilesList.filter((t) => t.role === 'admin').length,
+      disabled: profilesList.filter((t) => t.role === 'disabled').length,
       students: students.length,
       groups: groups.length,
-      collected: payments.reduce((s, p) => s + (p.is_paid ? Number(p.amount || 0) : 0), 0),
+      collected: totalCollected,
     })
     setLoading(false)
   }, [])
@@ -61,16 +68,41 @@ export default function AdminDashboard() {
     load()
   }, [load])
 
+  // دالة تغيير الصلاحية أو تعطيل/تفعيل الحساب
   const setRole = async (teacher, role) => {
-    if (!window.confirm(`تأكيد تغيير حالة «${teacher.full_name}» إلى «${ROLE_META[role]?.label}»؟`)) return
+    if (!window.confirm(`تأكيد تغيير حالة الحساب لـ «${teacher.full_name || teacher.email}»؟`)) return
     setBusyId(teacher.id)
     const { error } = await supabase
-      .from('teachers')
+      .from('profiles')
       .update({ role })
       .eq('id', teacher.id)
-    if (error) toast('تعذر تحديث الصلاحية', 'error')
+    if (error) toast('تعذر تحديث الحساب: ' + error.message, 'error')
     else {
-      toast('تم تحديث الصلاحية بنجاح')
+      toast('تم تحديث الحساب بنجاح')
+      load()
+    }
+    setBusyId(null)
+  }
+
+  // دالة تفعيل الاشتراك الشهري (30 يوماً / 100 ج.م)
+  const handleActivateSubscription = async (teacherId) => {
+    setBusyId(teacherId)
+    const newExpiry = new Date()
+    newExpiry.setDate(newExpiry.getDate() + 30)
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        subscription_status: 'active',
+        subscription_end_date: newExpiry.toISOString(),
+        role: 'teacher',
+      })
+      .eq('id', teacherId)
+
+    if (error) {
+      toast('تعذر تفعيل الاشتراك: ' + error.message, 'error')
+    } else {
+      toast('تم تفعيل الاشتراك بنجاح لمدة 30 يوماً!')
       load()
     }
     setBusyId(null)
@@ -105,7 +137,7 @@ export default function AdminDashboard() {
             </div>
             <div>
               <h1 className="text-xl font-extrabold">لوحة تحكم السوبر أدمن</h1>
-              <p className="text-xs text-slate-300">إدارة المعلمين والصلاحيات وإحصائيات المنصة</p>
+              <p className="text-xs text-slate-300">إدارة المعلمين، الاشتراكات (100 ج.م)، والصلاحيات</p>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -163,7 +195,7 @@ export default function AdminDashboard() {
           </div>
           <div className="card p-4 text-center">
             <p className="text-2xl font-extrabold text-emerald-700">{stats?.activeTeachers ?? 0}</p>
-            <p className="text-xs font-bold text-slate-500">معلمين نشطين</p>
+            <p className="text-xs font-bold text-slate-500">معلمين مشتركين (نشطين)</p>
           </div>
           <div className="card p-4 text-center">
             <p className="text-2xl font-extrabold text-rose-700">{stats?.disabled ?? 0}</p>
@@ -174,7 +206,10 @@ export default function AdminDashboard() {
         {/* Teachers table */}
         <div className="card overflow-hidden">
           <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-            <h2 className="text-lg font-extrabold text-slate-800">إدارة المعلمين</h2>
+            <div>
+              <h2 className="text-lg font-extrabold text-slate-800">إدارة المعلمين والاشتراكات</h2>
+              <p className="text-xs text-slate-400">تفعيل الاشتراكات (100 ج.م) أو تعطيل الحسابات</p>
+            </div>
             <button
               onClick={load}
               className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-bold text-slate-500 transition hover:bg-slate-100"
@@ -185,23 +220,25 @@ export default function AdminDashboard() {
           </div>
 
           {teachers.length === 0 ? (
-            <p className="py-10 text-center text-sm text-slate-400">لا يوجد معلمون بعد</p>
+            <p className="py-10 text-center text-sm text-slate-400">لا يوجد معلمون مسجلون بعد</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[760px]">
+              <table className="w-full min-w-[850px]">
                 <thead className="border-b border-slate-100 bg-slate-50">
                   <tr>
                     <th className="th">المعلم</th>
                     <th className="th">البريد الإلكتروني</th>
-                    <th className="th">الصلاحية</th>
+                    <th className="th">حالة الاشتراك</th>
                     <th className="th">تاريخ التسجيل</th>
-                    <th className="th text-center">إجراءات</th>
+                    <th className="th text-center">إجراءات التفعيل والتحكم</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
                   {teachers.map((t) => {
                     const meta = ROLE_META[t.role] || ROLE_META.teacher
                     const isSelf = t.id === profile?.id
+                    const isActiveSub = t.subscription_status === 'active'
+
                     return (
                       <tr key={t.id} className="transition hover:bg-slate-50/60">
                         <td className="td">
@@ -210,7 +247,7 @@ export default function AdminDashboard() {
                               {(t.full_name || 'م').charAt(0)}
                             </span>
                             <span className="font-bold">
-                              {t.full_name || '—'}
+                              {t.full_name || 'معلم جديد'}
                               {isSelf && (
                                 <span className="mr-2 rounded-full bg-primary-50 px-2 py-0.5 text-[10px] font-bold text-primary-600">
                                   أنت
@@ -223,34 +260,52 @@ export default function AdminDashboard() {
                           {t.email || '—'}
                         </td>
                         <td className="td">
-                          <span className={`badge ${meta.cls}`}>
-                            {t.role === 'disabled' ? <UserX className="h-3.5 w-3.5" /> : <UserCheck className="h-3.5 w-3.5" />}
-                            {meta.label}
-                          </span>
+                          {isActiveSub ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-extrabold text-emerald-700">
+                              <CheckCircle2 className="h-3.5 w-3.5" />
+                              مشترك نشط
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-3 py-1 text-xs font-extrabold text-rose-700">
+                              <ShieldAlert className="h-3.5 w-3.5" />
+                              تجريبي / منتهي
+                            </span>
+                          )}
                         </td>
                         <td className="td text-xs text-slate-500">
                           {t.created_at ? new Date(t.created_at).toLocaleDateString('ar-EG') : '—'}
                         </td>
                         <td className="td">
-                          <div className="flex justify-center gap-2">
+                          <div className="flex justify-center gap-2 items-center">
+                            {/* زر تفعيل الاشتراك بعد دفع 100 جنيه */}
+                            <button
+                              onClick={() => handleActivateSubscription(t.id)}
+                              disabled={busyId === t.id}
+                              className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-emerald-700 shadow-sm"
+                              title="تفعيل الاشتراك لمدة 30 يوماً"
+                            >
+                              تفعيل (100 ج.م)
+                            </button>
+
+                            {/* ترقية لمدير */}
                             {t.role !== 'admin' && (
                               <button
                                 onClick={() => setRole(t, 'admin')}
                                 disabled={busyId === t.id}
                                 className="rounded-lg bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-700 transition hover:bg-violet-100"
-                                title="ترقية إلى مدير نظام"
                               >
-                                ترقية
+                                ترقية لأدمن
                               </button>
                             )}
+
+                            {/* زر التعطيل / التفعيل */}
                             {t.role === 'disabled' ? (
                               <button
                                 onClick={() => setRole(t, 'teacher')}
                                 disabled={busyId === t.id}
                                 className="rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100"
-                                title="إعادة تفعيل"
                               >
-                                تفعيل
+                                إلغاء التعطيل
                               </button>
                             ) : (
                               <button
