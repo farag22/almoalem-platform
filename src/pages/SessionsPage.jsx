@@ -72,7 +72,17 @@ export default function SessionsPage() {
     let qrInstance = null
 
     if (scannerOpen) {
-      const timer = setTimeout(() => {
+      const timer = setTimeout(async () => {
+        try {
+          // طلب إذن الكاميرا صراحة أولاً لإجبار النظام على إظهار رسالة السماح للمستخدم
+          await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+        } catch (permErr) {
+          console.error('Camera permission denied:', permErr)
+          toast('يرجى السماح باستخدام الكاميرا من إعدادات الموبايل أو التطبيق', 'error')
+          setScannerOpen(false)
+          return
+        }
+
         qrInstance = new Html5Qrcode('qr-reader-container')
         html5QrCodeRef.current = qrInstance
 
@@ -85,7 +95,6 @@ export default function SessionsPage() {
             },
             async (decodedText) => {
               const now = Date.now()
-              // منع تكرار قراءة نفس الكود لفترة 10 ثوانٍ أو إيقاف الكاميرا فورا
               if (
                 lastScannedRef.current.code === decodedText &&
                 now - lastScannedRef.current.time < 10000
@@ -99,7 +108,7 @@ export default function SessionsPage() {
           )
           .catch((err) => {
             console.error('Camera error:', err)
-            toast('تعذر فتح الكاميرا. تأكد من إعطاء الصلاحيات.', 'error')
+            toast('تعذر تشغيل الكاميرا بعد السماح بالصلاحية.', 'error')
           })
       }, 300)
 
