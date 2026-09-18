@@ -26,16 +26,6 @@ export default function Dashboard() {
   const [todayAttendance, setTodayAttendance] = useState([])
   const [loading, setLoading] = useState(true)
 
-  // دالة إرشادية لتثبيت التطبيق على الهاتف
-  const handleInstallClick = () => {
-    alert(
-      '📱 خطوات تثبيت التطبيق على هاتفك:\n\n' +
-      '1. اضغط على قائمة المتصفح (الـ 3 نقاط أعلى اليمين أو اليسار).\n' +
-      '2. اختر "إضافة إلى الشاشة الرئيسية" (Add to Home Screen) أو "تثبيت التطبيق".\n' +
-      '3. سيتم تثبيت المنصة فوراً لتظهر كأيقونة تطبيق مستقلة على هاتفك وتعمل بكفاءة كاملة!'
-    )
-  }
-
   // حساب الأيام المتبقية للتجربة
   const calculateDaysLeft = () => {
     const profileData = currentProfile || profile
@@ -180,7 +170,6 @@ export default function Dashboard() {
 
   const activeProfile = currentProfile || profile
 
-  // توحيد الاسم والصورة ليعتمدوا تماماً مثل القائمة الجانبية على الـ profile
   const displayName = profile?.full_name?.trim() || activeProfile?.full_name?.trim() || 'فرج أبو رحيم';
   const displayAvatar = profile?.avatar_url || activeProfile?.avatar_url;
 
@@ -218,7 +207,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Welcome Card - يطابق القائمة الجانبية تماماً */}
+      {/* Welcome Card */}
       <div className="card flex flex-col gap-4 bg-gradient-to-l from-primary-700 to-indigo-900 p-6 text-white sm:flex-row sm:items-center sm:justify-between shadow-lg">
         <div className="flex items-center gap-4 min-w-0">
           <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white/10 text-xl font-bold text-white overflow-hidden border-2 border-white/20 shadow-inner">
@@ -257,10 +246,13 @@ export default function Dashboard() {
           >
             إضافة طالب
           </Link>
-          <button
-            onClick={handleInstallClick}
-            type="button"
-            className="col-span-2 flex items-center justify-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-xs sm:text-sm font-bold text-white backdrop-blur-sm transition-all hover:bg-white/20 active:scale-95 cursor-pointer"
+          {/* زر تنزيل التطبيق المباشر بالرابط الجديد */}
+          <a
+            href="https://files.manuscdn.com/user_upload_by_module/session_file/310519663881195004/pjzDWkNjMgdgdkJr.apk"
+            target="_blank"
+            rel="noopener noreferrer"
+            download
+            className="col-span-2 flex items-center justify-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-xs sm:text-sm font-bold text-white backdrop-blur-sm transition-all hover:bg-white/20 active:scale-95"
           >
             <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
@@ -270,8 +262,8 @@ export default function Dashboard() {
                 d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
               />
             </svg>
-            <span>كيفية تثبيت التطبيق</span>
-          </button>
+            <span>تنزيل التطبيق</span>
+          </a>
         </div>
       </div>
 
