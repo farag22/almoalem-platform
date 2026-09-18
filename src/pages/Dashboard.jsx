@@ -190,7 +190,7 @@ export default function Dashboard() {
   const isSubscriptionActive = activeProfile?.subscription_status === 'active' || profile?.subscription_status === 'active';
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="w-full max-w-full overflow-x-hidden space-y-4 sm:space-y-6 pb-6">
       {/* شريط تنبيه صلاحية التجربة */}
       {!isSubscriptionActive && (
         <div className={`p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 border shadow-sm ${
@@ -221,8 +221,8 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Welcome Card - تصميم مرتب ومضبوط للهواتف */}
-      <div className="card flex flex-col gap-4 bg-gradient-to-l from-primary-700 to-indigo-900 p-4 sm:p-6 text-white shadow-lg rounded-2xl">
+      {/* Welcome Card */}
+      <div className="card flex flex-col gap-4 bg-gradient-to-l from-primary-700 to-indigo-900 p-4 sm:p-6 text-white shadow-lg rounded-2xl w-full">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0 flex-1">
             <h1 className="text-lg sm:text-2xl font-extrabold truncate">
@@ -283,12 +283,12 @@ export default function Dashboard() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4 w-full">
         {cards.map((c) => (
           <Link
             key={c.title}
             to={c.to}
-            className="card flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3.5 sm:p-4 transition hover:shadow-md"
+            className="card flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3.5 sm:p-4 transition hover:shadow-md w-full"
           >
             <div
               className={`flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-2xl ${c.color}`}
@@ -304,9 +304,9 @@ export default function Dashboard() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 w-full">
         {/* Today attendance breakdown */}
-        <div className="card p-4 sm:p-6">
+        <div className="card p-4 sm:p-6 w-full">
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-primary-600" />
@@ -343,7 +343,7 @@ export default function Dashboard() {
         </div>
 
         {/* Groups overview */}
-        <div className="card p-4 sm:p-6">
+        <div className="card p-4 sm:p-6 w-full">
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Layers className="h-5 w-5 text-violet-600" />
@@ -362,18 +362,18 @@ export default function Dashboard() {
               {groups.map((g) => (
                 <div
                   key={g.id}
-                  className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/50 px-3 py-2"
+                  className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/50 px-3 py-2 w-full"
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
                     <span
                       className="h-2.5 w-2.5 rounded-full shrink-0"
                       style={{ backgroundColor: g.color_code }}
                     />
-                    <span className="font-bold text-slate-700 text-xs sm:text-sm truncate max-w-[120px]">{g.group_name}</span>
+                    <span className="font-bold text-slate-700 text-xs sm:text-sm truncate">{g.group_name}</span>
                   </div>
                   <Link
                     to="/dashboard/students"
-                    className="text-[11px] font-bold text-primary-600 hover:underline shrink-0"
+                    className="text-xs font-bold bg-primary-50 text-primary-600 px-2.5 py-1 rounded-lg hover:bg-primary-100 transition shrink-0"
                   >
                     الطلاب
                   </Link>
@@ -383,7 +383,7 @@ export default function Dashboard() {
           ) : (
             <Link
               to="/dashboard/groups"
-              className="flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 py-6 text-xs sm:text-sm font-bold text-slate-400 transition hover:border-primary-300 hover:text-primary-500"
+              className="flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 py-6 text-xs sm:text-sm font-bold text-slate-400 transition hover:border-primary-300 hover:text-primary-500 w-full"
             >
               + أنشئ مجموعة جديدة
             </Link>
@@ -396,7 +396,7 @@ export default function Dashboard() {
 
 function Pill({ label, value, cls, icon }) {
   return (
-    <div className={`flex flex-col items-center gap-1 rounded-xl py-3 ${cls}`}>
+    <div className={`flex flex-col items-center gap-1 rounded-xl py-3 ${cls} w-full`}>
       <div className="flex items-center gap-1 text-xs sm:text-sm font-bold">
         {icon}
         {label}
