@@ -26,7 +26,7 @@ export default function Dashboard() {
   const [todayAttendance, setTodayAttendance] = useState([])
   const [loading, setLoading] = useState(true)
 
-  // دالة إرشادية واضحة لتثبيت التطبيق يدوياً من المتصفح بكل سهولة
+  // دالة إرشادية لتثبيت التطبيق على الهاتف
   const handleInstallClick = () => {
     alert(
       '📱 خطوات تثبيت التطبيق على هاتفك:\n\n' +
@@ -49,7 +49,6 @@ export default function Dashboard() {
 
   const daysLeft = calculateDaysLeft()
 
-  // جلب أحدث بيانات المعلم مع دمج بيانات الـ profile الأساسية لضمان عدم ضياع الاسم أو الصورة
   useEffect(() => {
     async function fetchLatestProfile() {
       const targetId = user?.id || teacherId
@@ -181,23 +180,21 @@ export default function Dashboard() {
 
   const activeProfile = currentProfile || profile
 
-  const displayName = activeProfile?.full_name?.trim()
-    ? activeProfile.full_name
-    : (profile?.full_name?.trim() || 'فرج أبو رحيم');
-
-  const displayAvatar = activeProfile?.avatar_url || profile?.avatar_url;
+  // توحيد الاسم والصورة ليعتمدوا تماماً مثل القائمة الجانبية على الـ profile
+  const displayName = profile?.full_name?.trim() || activeProfile?.full_name?.trim() || 'فرج أبو رحيم';
+  const displayAvatar = profile?.avatar_url || activeProfile?.avatar_url;
 
   const isSubscriptionActive = activeProfile?.subscription_status === 'active' || profile?.subscription_status === 'active';
 
   return (
     <div className="space-y-6">
-      {/* شريط تنبيه صلاحية التجربة - يختفي تماماً إذا كان الاشتراك نشطاً */}
+      {/* شريط تنبيه صلاحية التجربة */}
       {!isSubscriptionActive && (
         <div className={`p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 border shadow-sm ${
           daysLeft <= 5 ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-amber-50 border-amber-200 text-amber-800'
         }`}>
           <div className="flex items-center gap-3">
-            <div className={`p-2.5 rounded-xl ${daysLeft <= 5 ? 'bg-rose-100 text-rose-600' : 'bg-amber-100 text-amber-600'}`}>
+            <div className={`p-2.5 rounded-xl shrink-0 ${daysLeft <= 5 ? 'bg-rose-100 text-rose-600' : 'bg-amber-100 text-amber-600'}`}>
               <Wallet className="w-6 h-6" />
             </div>
             <div>
@@ -221,9 +218,9 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Welcome Card */}
+      {/* Welcome Card - يطابق القائمة الجانبية تماماً */}
       <div className="card flex flex-col gap-4 bg-gradient-to-l from-primary-700 to-indigo-900 p-6 text-white sm:flex-row sm:items-center sm:justify-between shadow-lg">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 min-w-0">
           <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white/10 text-xl font-bold text-white overflow-hidden border-2 border-white/20 shadow-inner">
             {displayAvatar ? (
               <img src={displayAvatar} alt="Profile" className="h-full w-full object-cover" />
@@ -231,8 +228,8 @@ export default function Dashboard() {
               displayName.charAt(0).toUpperCase()
             )}
           </div>
-          <div>
-            <h1 className="text-2xl font-extrabold">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-extrabold truncate">
               مرحباً، {displayName}
             </h1>
             <p className="mt-1 text-sm text-indigo-200">
@@ -240,7 +237,7 @@ export default function Dashboard() {
             </p>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center shrink-0">
           <Link
             to="/dashboard/sessions"
             className="col-span-2 flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 text-sm font-extrabold text-white shadow-md transition-all hover:bg-emerald-600 active:scale-95"
@@ -260,7 +257,6 @@ export default function Dashboard() {
           >
             إضافة طالب
           </Link>
-          {/* زر كيفية إضافة وتثبيت التطبيق من المتصفح */}
           <button
             onClick={handleInstallClick}
             type="button"
