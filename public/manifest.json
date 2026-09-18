@@ -1,11 +1,11 @@
 {
   "name": "teacher1.us",
   "short_name": "teacher1.us",
-  "description": "منصة للمعلمين وأولياء الأمور",
+  "description": "منصة المعلم لإدارة الحضور والطلاب",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#ffffff",
+  "theme_color": "#2547eb",
   "dir": "ltr",
   "orientation": "any",
   "scope": "/",
