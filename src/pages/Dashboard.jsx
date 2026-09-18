@@ -25,6 +25,35 @@ export default function Dashboard() {
   const [groups, setGroups] = useState([])
   const [todayAttendance, setTodayAttendance] = useState([])
   const [loading, setLoading] = useState(true)
+  
+  // حالة حفظ نافذة التثبيت التلقائي للتطبيق (PWA Prompt)
+  const [deferredPrompt, setDeferredPrompt] = useState(null)
+
+  // التقاط حدث التثبيت التلقائي من المتصفح
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault()
+      setDeferredPrompt(e)
+    }
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+    }
+  }, [])
+
+  // دالة التعامل مع ضغطة زر تنزيل التطبيق
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt()
+      const { outcome } = await deferredPrompt.userChoice
+      if (outcome === 'accepted') {
+        console.log('المستخدم وافق على تثبيت التطبيق')
+      }
+      setDeferredPrompt(null)
+    } else {
+      alert('التطبيق مثبت مسبقاً على جهازك، أو يمكنك تثبيته يدوياً من قائمة المتصفح (إضافة إلى الشاشة الرئيسية).')
+    }
+  }
 
   // حساب الأيام المتبقية للتجربة
   const calculateDaysLeft = () => {
@@ -171,19 +200,17 @@ export default function Dashboard() {
 
   const activeProfile = currentProfile || profile
 
-  // الاعتماد المباشر على full_name والـ avatar_url من الـ profile المدمج
   const displayName = activeProfile?.full_name?.trim()
     ? activeProfile.full_name
     : (profile?.full_name?.trim() || 'فرج أبو رحيم');
 
   const displayAvatar = activeProfile?.avatar_url || profile?.avatar_url;
 
-  // التحقق من حالة الاشتراك لإخفاء الشريط تماماً عند التنشيط
   const isSubscriptionActive = activeProfile?.subscription_status === 'active' || profile?.subscription_status === 'active';
 
   return (
     <div className="space-y-6">
-      {/* شريط تنبيه صلاحية التجربة - يختفي تماماً إذا كان الاشتراك نشطاً */}
+      {/* شريط تنبيه صلاحية التجربة */}
       {!isSubscriptionActive && (
         <div className={`p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 border shadow-sm ${
           daysLeft <= 5 ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-amber-50 border-amber-200 text-amber-800'
@@ -252,12 +279,11 @@ export default function Dashboard() {
           >
             إضافة طالب
           </Link>
-          <a
-            href="https://apk.e-droid.net/apk/app4153335-qeh2f5.apk?v=1"
-            target="_blank"
-            rel="noopener noreferrer"
-            download
-            className="col-span-2 flex items-center justify-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-xs sm:text-sm font-bold text-white backdrop-blur-sm transition-all hover:bg-white/20 active:scale-95"
+          {/* زر التثبيت التلقائي الجديد */}
+          <button
+            onClick={handleInstallClick}
+            type="button"
+            className="col-span-2 flex items-center justify-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-xs sm:text-sm font-bold text-white backdrop-blur-sm transition-all hover:bg-white/20 active:scale-95 cursor-pointer"
           >
             <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
@@ -268,7 +294,7 @@ export default function Dashboard() {
               />
             </svg>
             <span>تنزيل التطبيق</span>
-          </a>
+          </button>
         </div>
       </div>
 
