@@ -26,7 +26,7 @@ export default function Dashboard() {
   const [todayAttendance, setTodayAttendance] = useState([])
   const [loading, setLoading] = useState(true)
 
-  // دالة إرشادية واضحة لتثبيت التطبيق يدوياً من المتصفح بكل سهولة
+  // دالة إرشادية لتثبيت التطبيق على الهاتف
   const handleInstallClick = () => {
     alert(
       '📱 خطوات تثبيت التطبيق على هاتفك:\n\n' +
@@ -190,21 +190,21 @@ export default function Dashboard() {
   const isSubscriptionActive = activeProfile?.subscription_status === 'active' || profile?.subscription_status === 'active';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* شريط تنبيه صلاحية التجربة */}
       {!isSubscriptionActive && (
         <div className={`p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 border shadow-sm ${
           daysLeft <= 5 ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-amber-50 border-amber-200 text-amber-800'
         }`}>
           <div className="flex items-center gap-3">
-            <div className={`p-2.5 rounded-xl ${daysLeft <= 5 ? 'bg-rose-100 text-rose-600' : 'bg-amber-100 text-amber-600'}`}>
+            <div className={`p-2.5 rounded-xl shrink-0 ${daysLeft <= 5 ? 'bg-rose-100 text-rose-600' : 'bg-amber-100 text-amber-600'}`}>
               <Wallet className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="font-extrabold text-sm">
+              <h2 className="font-extrabold text-xs sm:text-sm">
                 {daysLeft > 0 ? `فترة التجربة نشطة: متبقي ${daysLeft} يوماً على انتهاء اشتراكك` : `انتهت فترة التجربة المجانية`}
               </h2>
-              <p className="text-xs opacity-80 mt-0.5">
+              <p className="text-[11px] sm:text-xs opacity-80 mt-0.5">
                 قيمة تجديد الاشتراك الشهري 100 جنيه. لتفادي توقف المنصة تواصل معنا عبر الواتساب لتفعيل الحساب.
               </p>
             </div>
@@ -213,7 +213,7 @@ export default function Dashboard() {
             href="https://wa.me/201115413154?text=السلام%20عليكم،%20أرغب%20في%20تجديد%20اشتراك%20منصة%20السنتر%20(100%20جنيه)"
             target="_blank"
             rel="noopener noreferrer"
-            className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition shrink-0 shadow-sm flex items-center gap-1.5"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition shrink-0 shadow-sm flex items-center gap-1.5 w-full sm:w-auto justify-center"
           >
             <MessageCircle className="w-4 h-4" />
             <span>تفعيل عبر الواتساب (01115413154)</span>
@@ -221,50 +221,53 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Welcome Card */}
-      <div className="card flex flex-col gap-4 bg-gradient-to-l from-primary-700 to-indigo-900 p-6 text-white sm:flex-row sm:items-center sm:justify-between shadow-lg">
-        <div className="flex items-center gap-4">
-          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white/10 text-xl font-bold text-white overflow-hidden border-2 border-white/20 shadow-inner">
+      {/* Welcome Card - تصميم مرتب ومضبوط للهواتف */}
+      <div className="card flex flex-col gap-4 bg-gradient-to-l from-primary-700 to-indigo-900 p-4 sm:p-6 text-white shadow-lg rounded-2xl">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-lg sm:text-2xl font-extrabold truncate">
+              مرحباً، {displayName}
+            </h1>
+            <p className="mt-0.5 text-xs text-indigo-200 truncate" dir="ltr">
+              {user?.email}
+            </p>
+            <p className="mt-1 text-[11px] sm:text-xs text-indigo-300">
+              إليك ملخص منصتك لهذا اليوم — {fmtDate(new Date())}
+            </p>
+          </div>
+          <div className="flex h-14 w-14 sm:h-16 sm:w-16 shrink-0 items-center justify-center rounded-full bg-white/10 text-lg font-bold text-white overflow-hidden border-2 border-white/20 shadow-inner">
             {displayAvatar ? (
               <img src={displayAvatar} alt="Profile" className="h-full w-full object-cover" />
             ) : (
               displayName.charAt(0).toUpperCase()
             )}
           </div>
-          <div>
-            <h1 className="text-2xl font-extrabold">
-              مرحباً، {displayName}
-            </h1>
-            <p className="mt-1 text-sm text-indigo-200">
-              إليك ملخص منصتك لهذا اليوم — {fmtDate(new Date())}
-            </p>
-          </div>
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+
+        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/10">
           <Link
             to="/dashboard/sessions"
-            className="col-span-2 flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 text-sm font-extrabold text-white shadow-md transition-all hover:bg-emerald-600 active:scale-95"
+            className="col-span-2 flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-xs sm:text-sm font-extrabold text-white shadow-md transition-all hover:bg-emerald-600 active:scale-95"
           >
-            <QrCode className="h-5 w-5 shrink-0" />
+            <QrCode className="h-4 w-4 shrink-0" />
             <span>ماسح Qr السريع</span>
           </Link>
           <Link
             to="/dashboard/attendance"
-            className="flex items-center justify-center rounded-xl bg-white/10 px-4 py-2.5 text-xs sm:text-sm font-bold text-white hover:bg-white/20 transition-all active:scale-95"
+            className="flex items-center justify-center rounded-xl bg-white/10 px-3 py-2 text-xs font-bold text-white hover:bg-white/20 transition-all active:scale-95"
           >
             تسجيل الحضور
           </Link>
           <Link
             to="/dashboard/students"
-            className="flex items-center justify-center rounded-xl bg-white px-4 py-2.5 text-xs sm:text-sm font-bold text-primary-700 hover:bg-indigo-50 transition-all active:scale-95"
+            className="flex items-center justify-center rounded-xl bg-white px-3 py-2 text-xs font-bold text-primary-700 hover:bg-indigo-50 transition-all active:scale-95"
           >
             إضافة طالب
           </Link>
-          {/* زر التثبيت الإرشادي */}
           <button
             onClick={handleInstallClick}
             type="button"
-            className="col-span-2 flex items-center justify-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-xs sm:text-sm font-bold text-white backdrop-blur-sm transition-all hover:bg-white/20 active:scale-95 cursor-pointer"
+            className="col-span-2 flex items-center justify-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-xs font-bold text-white backdrop-blur-sm transition-all hover:bg-white/20 active:scale-95 cursor-pointer"
           >
             <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
@@ -285,7 +288,7 @@ export default function Dashboard() {
           <Link
             key={c.title}
             to={c.to}
-            className="card flex flex-col sm:flex-row items-start sm:items-center gap-3 p-4 transition hover:shadow-md"
+            className="card flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3.5 sm:p-4 transition hover:shadow-md"
           >
             <div
               className={`flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-2xl ${c.color}`}
@@ -301,23 +304,23 @@ export default function Dashboard() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* Today attendance breakdown */}
-        <div className="card p-6">
-          <div className="mb-4 flex items-center justify-between">
+        <div className="card p-4 sm:p-6">
+          <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-primary-600" />
-              <h2 className="text-lg font-extrabold text-slate-800">حضور اليوم</h2>
+              <h2 className="text-base sm:text-lg font-extrabold text-slate-800">حضور اليوم</h2>
             </div>
             <Link
               to="/dashboard/attendance"
-              className="inline-flex items-center text-sm font-bold text-primary-600 hover:underline"
+              className="inline-flex items-center text-xs sm:text-sm font-bold text-primary-600 hover:underline"
             >
               التفاصيل
               <ChevronLeft className="h-4 w-4" />
             </Link>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-2">
             <Pill
               label="حاضر"
               value={stats?.present || 0}
@@ -340,16 +343,15 @@ export default function Dashboard() {
         </div>
 
         {/* Groups overview */}
-        <div className="card p-6">
-          <div className="mb-4 flex items-center justify-between">
+        <div className="card p-4 sm:p-6">
+          <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Layers className="h-5 w-5 text-violet-600"
-              />
-              <h2 className="text-lg font-extrabold text-slate-800">المجاميع</h2>
+              <Layers className="h-5 w-5 text-violet-600" />
+              <h2 className="text-base sm:text-lg font-extrabold text-slate-800">المجاميع</h2>
             </div>
             <Link
               to="/dashboard/groups"
-              className="inline-flex items-center text-sm font-bold text-primary-600 hover:underline"
+              className="inline-flex items-center text-xs sm:text-sm font-bold text-primary-600 hover:underline"
             >
               إدارتها
               <ChevronLeft className="h-4 w-4" />
@@ -360,14 +362,14 @@ export default function Dashboard() {
               {groups.map((g) => (
                 <div
                   key={g.id}
-                  className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/50 px-3 py-2.5"
+                  className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/50 px-3 py-2"
                 >
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex items-center gap-2">
                     <span
-                      className="h-3 w-3 rounded-full shrink-0"
+                      className="h-2.5 w-2.5 rounded-full shrink-0"
                       style={{ backgroundColor: g.color_code }}
                     />
-                    <span className="font-bold text-slate-700 text-sm truncate max-w-[110px]">{g.group_name}</span>
+                    <span className="font-bold text-slate-700 text-xs sm:text-sm truncate max-w-[120px]">{g.group_name}</span>
                   </div>
                   <Link
                     to="/dashboard/students"
@@ -381,7 +383,7 @@ export default function Dashboard() {
           ) : (
             <Link
               to="/dashboard/groups"
-              className="flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 py-8 text-sm font-bold text-slate-400 transition hover:border-primary-300 hover:text-primary-500"
+              className="flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 py-6 text-xs sm:text-sm font-bold text-slate-400 transition hover:border-primary-300 hover:text-primary-500"
             >
               + أنشئ مجموعة جديدة
             </Link>
@@ -394,12 +396,12 @@ export default function Dashboard() {
 
 function Pill({ label, value, cls, icon }) {
   return (
-    <div className={`flex flex-col items-center gap-1 rounded-xl py-4 ${cls}`}>
-      <div className="flex items-center gap-1 text-sm font-bold">
+    <div className={`flex flex-col items-center gap-1 rounded-xl py-3 ${cls}`}>
+      <div className="flex items-center gap-1 text-xs sm:text-sm font-bold">
         {icon}
         {label}
       </div>
-      <p className="text-2xl font-extrabold">{value}</p>
+      <p className="text-xl sm:text-2xl font-extrabold">{value}</p>
     </div>
   )
 }
