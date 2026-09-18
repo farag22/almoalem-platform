@@ -26,6 +26,17 @@ export default function Dashboard() {
   const [todayAttendance, setTodayAttendance] = useState([])
   const [loading, setLoading] = useState(true)
 
+  // دالة تحميل التطبيق برمجياً في الخلفية فور الضغط بدون فتح تبويب جديد أو إظهار الرابط
+  const handleDirectDownload = () => {
+    const apkUrl = 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663881195004/BVdRjhGgdRkQsfxd.apk'
+    const link = document.createElement('a')
+    link.href = apkUrl
+    link.setAttribute('download', 'app.apk')
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
   // حساب الأيام المتبقية للتجربة
   const calculateDaysLeft = () => {
     const profileData = currentProfile || profile
@@ -246,13 +257,11 @@ export default function Dashboard() {
           >
             إضافة طالب
           </Link>
-          {/* زر تنزيل التطبيق المباشر بالرابط الجديد */}
-          <a
-            href="https://files.manuscdn.com/user_upload_by_module/session_file/310519663881195004/pjzDWkNjMgdgdkJr.apk"
-            target="_blank"
-            rel="noopener noreferrer"
-            download
-            className="col-span-2 flex items-center justify-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-xs sm:text-sm font-bold text-white backdrop-blur-sm transition-all hover:bg-white/20 active:scale-95"
+          {/* زر التنزيل المباشر بدون إظهار الرابط */}
+          <button
+            onClick={handleDirectDownload}
+            type="button"
+            className="col-span-2 flex items-center justify-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-xs sm:text-sm font-bold text-white backdrop-blur-sm transition-all hover:bg-white/20 active:scale-95 cursor-pointer"
           >
             <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
@@ -263,7 +272,7 @@ export default function Dashboard() {
               />
             </svg>
             <span>تنزيل التطبيق</span>
-          </a>
+          </button>
         </div>
       </div>
 
