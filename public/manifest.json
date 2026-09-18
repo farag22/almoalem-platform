@@ -1,15 +1,19 @@
 {
-  "name": "منصة المعلم",
-  "short_name": "منصة المعلم",
+  "name": "teacher1.us",
+  "short_name": "teacher1.us",
+  "description": "منصة للمعلمين وأولياء الأمور",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#2547eb",
+  "theme_color": "#ffffff",
+  "dir": "ltr",
+  "orientation": "any",
+  "scope": "/",
   "icons": [
     {
-      "src": "/favicon.svg",
-      "sizes": "192x192",
-      "type": "image/svg+xml"
+      "src": "https://teacher1.us.ci/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192"
     }
   ]
 }
