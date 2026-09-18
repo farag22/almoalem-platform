@@ -25,34 +25,15 @@ export default function Dashboard() {
   const [groups, setGroups] = useState([])
   const [todayAttendance, setTodayAttendance] = useState([])
   const [loading, setLoading] = useState(true)
-  
-  // حالة حفظ نافذة التثبيت التلقائي للتطبيق (PWA Prompt)
-  const [deferredPrompt, setDeferredPrompt] = useState(null)
 
-  // التقاط حدث التثبيت التلقائي من المتصفح
-  useEffect(() => {
-    const handleBeforeInstallPrompt = (e) => {
-      e.preventDefault()
-      setDeferredPrompt(e)
-    }
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
-    }
-  }, [])
-
-  // دالة التعامل مع ضغطة زر تنزيل التطبيق
-  const handleInstallClick = async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt()
-      const { outcome } = await deferredPrompt.userChoice
-      if (outcome === 'accepted') {
-        console.log('المستخدم وافق على تثبيت التطبيق')
-      }
-      setDeferredPrompt(null)
-    } else {
-      alert('التطبيق مثبت مسبقاً على جهازك، أو يمكنك تثبيته يدوياً من قائمة المتصفح (إضافة إلى الشاشة الرئيسية).')
-    }
+  // دالة إرشادية واضحة لتثبيت التطبيق يدوياً من المتصفح بكل سهولة
+  const handleInstallClick = () => {
+    alert(
+      '📱 خطوات تثبيت التطبيق على هاتفك:\n\n' +
+      '1. اضغط على قائمة المتصفح (الـ 3 نقاط أعلى اليمين أو اليسار).\n' +
+      '2. اختر "إضافة إلى الشاشة الرئيسية" (Add to Home Screen) أو "تثبيت التطبيق".\n' +
+      '3. سيتم تثبيت المنصة فوراً لتظهر كأيقونة تطبيق مستقلة على هاتفك وتعمل بكفاءة كاملة!'
+    )
   }
 
   // حساب الأيام المتبقية للتجربة
@@ -68,7 +49,7 @@ export default function Dashboard() {
 
   const daysLeft = calculateDaysLeft()
 
-  // جلب أحدث بيانات المعلم مع دمج بيانات الـ profile الأساسية لضمان عدم ضياع الاسم أو الصورة
+  // جلب أحدث بيانات المعلم مع دمج بيانات الـ profile الأساسية
   useEffect(() => {
     async function fetchLatestProfile() {
       const targetId = user?.id || teacherId
@@ -279,7 +260,7 @@ export default function Dashboard() {
           >
             إضافة طالب
           </Link>
-          {/* زر التثبيت التلقائي الجديد */}
+          {/* زر التثبيت الإرشادي */}
           <button
             onClick={handleInstallClick}
             type="button"
@@ -362,7 +343,8 @@ export default function Dashboard() {
         <div className="card p-6">
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Layers className="h-5 w-5 text-violet-600" />
+              <Layers className="h-5 w-5 text-violet-600"
+              />
               <h2 className="text-lg font-extrabold text-slate-800">المجاميع</h2>
             </div>
             <Link
