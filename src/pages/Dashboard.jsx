@@ -28,7 +28,7 @@ export default function Dashboard() {
 
   // دالة تحميل التطبيق برمجياً في الخلفية فور الضغط بدون فتح تبويب جديد أو إظهار الرابط
   const handleDirectDownload = () => {
-    const apkUrl = 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663881195004/OMyFfSfvynIODKPe.apk'
+    const apkUrl = 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663881195004/HLTWEvxBuMlXTNCn.apk'
     const link = document.createElement('a')
     link.href = apkUrl
     link.setAttribute('download', 'app.apk')
