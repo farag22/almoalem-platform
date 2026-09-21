@@ -210,17 +210,17 @@ export default function DashboardLayout() {
           </main>
         </div>
 
-        {/* Bottom Navigation Bar for Mobile */}
-        <nav className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-around border-t border-slate-200 bg-white/95 px-2 py-2 shadow-lg backdrop-blur lg:hidden">
+        {/* Bottom Navigation Bar for Mobile with Glassmorphism & Neumorphism */}
+        <nav className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-around border-t border-white/60 bg-white/75 px-2 py-2 shadow-[0_-5px_20px_rgba(0,0,0,0.08)] backdrop-blur-md lg:hidden">
           {MOBILE_NAV.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               end={item.end}
               className={({ isActive }) =>
-                `flex flex-col items-center gap-1 rounded-xl p-2 text-[11px] font-bold transition ${
+                `flex flex-col items-center gap-1 rounded-2xl px-3 py-2 text-[11px] font-bold transition ${
                   isActive
-                    ? 'text-primary-600 scale-105'
+                    ? 'bg-gradient-to-br from-gray-100 to-gray-300 border border-white/75 backdrop-blur-sm text-primary-900 shadow-[inset_0_0_8px_rgba(0,0,0,0.1),-2px_-2px_6px_rgba(255,255,255,0.8),2px_2px_6px_rgba(0,0,0,0.15)] scale-105'
                     : 'text-slate-400 hover:text-slate-600'
                 }`
               }
