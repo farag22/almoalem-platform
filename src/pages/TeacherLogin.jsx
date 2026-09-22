@@ -31,11 +31,17 @@ export default function TeacherLogin() {
           },
         })
         if (error) throw error
+        
         if (data?.user) {
-          setMessage(
-            'تم إنشاء الحساب بنجاح! تحقق من بريدك الإلكتروني لتفعيل الحساب إن لزم الأمر، ثم سجّل الدخول.',
-          )
-          setMode('login')
+          // تسجيل الدخول مباشرة بعد إنشاء الحساب بدون الحاجة لتفعيل الإيميل
+          const { error: loginError } = await supabase.auth.signInWithPassword({ email, password })
+          if (loginError) throw loginError
+
+          setMessage('تم التسجيل بنجاح! جاري توجيهك للمنصة...')
+          
+          setTimeout(() => {
+            navigate('/dashboard', { replace: true })
+          }, 1000)
         }
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password })
