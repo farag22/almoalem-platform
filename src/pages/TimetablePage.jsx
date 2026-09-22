@@ -7,7 +7,8 @@ import { useToast } from '../components/ui/Toast'
 const daysOfWeek = ['السبت', 'الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة']
 
 export default function TimetablePage() {
-  const { teacherId } = useAuth()
+  const { teacherId, user } = useAuth()
+  const activeTeacherId = teacherId || user?.id
   const toast = useToast()
   
   const [timetable, setTimetable] = useState([])
@@ -21,11 +22,11 @@ export default function TimetablePage() {
   const [submitting, setSubmitting] = useState(false)
 
   const fetchData = async () => {
-    if (!teacherId) return
+    if (!activeTeacherId) return
     setLoading(true)
     const [tRes, gRes] = await Promise.all([
-      supabase.from('timetable').select('*, groups(group_name, color_code)').eq('teacher_id', teacherId),
-      supabase.from('groups').select('id, group_name').eq('teacher_id', teacherId)
+      supabase.from('timetable').select('*, groups(group_name, color_code)').eq('teacher_id', activeTeacherId),
+      supabase.from('groups').select('id, group_name').eq('teacher_id', activeTeacherId)
     ])
     setTimetable(tRes.data ?? [])
     setGroups(gRes.data ?? [])
@@ -35,7 +36,7 @@ export default function TimetablePage() {
 
   useEffect(() => {
     fetchData()
-  }, [teacherId])
+  }, [activeTeacherId])
 
   const handleAdd = async (e) => {
     e.preventDefault()
@@ -46,10 +47,10 @@ export default function TimetablePage() {
 
     setSubmitting(true)
     
-    // محاولة الإضافة بالحقل الأول (room)
+    // محاولة الإضافة بالحقل الأول (room) مع استخدام الـ activeTeacherId المضمون
     const { error } = await supabase.from('timetable').insert([
       {
-        teacher_id: teacherId,
+        teacher_id: activeTeacherId,
         group_id: groupId,
         day_of_week: day,
         start_time: startTime,
@@ -61,7 +62,7 @@ export default function TimetablePage() {
       // محاولة بديلة لو اسم الحقل room_or_place
       const { error: err2 } = await supabase.from('timetable').insert([
         {
-          teacher_id: teacherId,
+          teacher_id: activeTeacherId,
           group_id: groupId,
           day_of_week: day,
           start_time: startTime,
