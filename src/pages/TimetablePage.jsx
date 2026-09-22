@@ -46,46 +46,57 @@ export default function TimetablePage() {
     }
 
     setSubmitting(true)
-    
-    // محاولة الإضافة بالحقل الأول (room) مع استخدام الـ activeTeacherId المضمون
-    const { error } = await supabase.from('timetable').insert([
-      {
-        teacher_id: activeTeacherId,
-        group_id: groupId,
-        day_of_week: day,
-        start_time: startTime,
-        room: room,
-      }
-    ])
 
-    if (error) {
-      // محاولة بديلة لو اسم الحقل room_or_place
-      const { error: err2 } = await supabase.from('timetable').insert([
+    try {
+      // 1. التأكد أولاً من وجود المعلم في جدول teachers لعدم حدوث خطأ القيد الأجنبي
+      const { data: existingTeacher } = await supabase
+        .from('teachers')
+        .select('id')
+        .eq('id', activeTeacherId)
+        .maybeSingle()
+
+      if (!existingTeacher) {
+        // لو مش موجود، بنضيفه لجدول teachers أوتوماتيكياً بالمعرف الحالي
+        await supabase.from('teachers').insert([
+          { id: activeTeacherId, role: 'teacher' }
+        ])
+      }
+
+      // 2. محاولة إضافة الحصة باستخدام حقل room
+      const { error } = await supabase.from('timetable').insert([
         {
           teacher_id: activeTeacherId,
           group_id: groupId,
           day_of_week: day,
           start_time: startTime,
-          room_or_place: room
+          room: room,
         }
       ])
-      
-      if (err2) {
-        console.error('Supabase Timetable Error:', err2)
-        toast(`خطأ قاعدة البيانات: ${err2.message}`, 'error')
-      } else {
-        toast('تمت إضافة الموعد بنجاح')
-        setStartTime('')
-        setRoom('')
-        fetchData()
+
+      if (error) {
+        // محاولة ثانية بديلة لو كان اسم الحقل في القاعدة room_or_place
+        const { error: err2 } = await supabase.from('timetable').insert([
+          {
+            teacher_id: activeTeacherId,
+            group_id: groupId,
+            day_of_week: day,
+            start_time: startTime,
+            room_or_place: room
+          }
+        ])
+        if (err2) throw err2
       }
-    } else {
+
       toast('تمت إضافة الموعد بنجاح')
       setStartTime('')
       setRoom('')
       fetchData()
+    } catch (err) {
+      console.error('Timetable Add Error:', err)
+      toast(`خطأ الإضافة: ${err.message}`, 'error')
+    } finally {
+      setSubmitting(false)
     }
-    setSubmitting(false)
   }
 
   const handleDelete = async (id) => {
