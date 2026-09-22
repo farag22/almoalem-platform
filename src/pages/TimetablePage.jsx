@@ -45,18 +45,38 @@ export default function TimetablePage() {
     }
 
     setSubmitting(true)
+    
+    // محاولة الإضافة بالحقل الأول (room)
     const { error } = await supabase.from('timetable').insert([
       {
         teacher_id: teacherId,
         group_id: groupId,
         day_of_week: day,
         start_time: startTime,
-        room_or_place: room
+        room: room,
       }
     ])
 
     if (error) {
-      toast('تعذر إضافة الحصة للجدول', 'error')
+      // محاولة بديلة احتياطية لو كان اسم الحقل في القاعدة room_or_place
+      const { error: err2 } = await supabase.from('timetable').insert([
+        {
+          teacher_id: teacherId,
+          group_id: groupId,
+          day_of_week: day,
+          start_time: startTime,
+          room_or_place: room
+        }
+      ])
+      
+      if (err2) {
+        toast('تعذر إضافة الحصة للجدول', 'error')
+      } else {
+        toast('تمت إضافة الموعد بنجاح')
+        setStartTime('')
+        setRoom('')
+        fetchData()
+      }
     } else {
       toast('تمت إضافة الموعد بنجاح')
       setStartTime('')
@@ -133,30 +153,33 @@ export default function TimetablePage() {
                 <p className="text-xs text-slate-400 py-4 text-center">لا توجد حصص مسجلة</p>
               ) : (
                 <div className="space-y-2.5">
-                  {dayItems.map(item => (
-                    <div key={item.id} className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="font-bold text-slate-800 text-sm truncate flex items-center gap-1.5">
-                          <Layers className="h-3.5 w-3.5 text-primary-600 shrink-0" />
-                          <span>{item.groups?.group_name || 'مجموعة'}</span>
-                        </p>
-                        <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
-                          <Clock className="h-3 w-3 text-slate-400" />
-                          <span>{item.start_time}</span>
-                          {item.room_or_place && (
-                            <>
-                              <span className="text-slate-300">|</span>
-                              <MapPin className="h-3 w-3 text-slate-400" />
-                              <span className="truncate">{item.room_or_place}</span>
-                            </>
-                          )}
-                        </p>
+                  {dayItems.map(item => {
+                    const placeValue = item.room || item.room_or_place
+                    return (
+                      <div key={item.id} className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="font-bold text-slate-800 text-sm truncate flex items-center gap-1.5">
+                            <Layers className="h-3.5 w-3.5 text-primary-600 shrink-0" />
+                            <span>{item.groups?.group_name || 'مجموعة'}</span>
+                          </p>
+                          <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                            <Clock className="h-3 w-3 text-slate-400" />
+                            <span>{item.start_time}</span>
+                            {placeValue && (
+                              <>
+                                <span className="text-slate-300">|</span>
+                                <MapPin className="h-3 w-3 text-slate-400" />
+                                <span className="truncate">{placeValue}</span>
+                              </>
+                            )}
+                          </p>
+                        </div>
+                        <button onClick={() => handleDelete(item.id)} className="text-rose-500 hover:bg-rose-50 p-2 rounded-lg transition">
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </div>
-                      <button onClick={() => handleDelete(item.id)} className="text-rose-500 hover:bg-rose-50 p-2 rounded-lg transition">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </div>
