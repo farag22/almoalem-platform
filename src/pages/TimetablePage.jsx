@@ -58,7 +58,7 @@ export default function TimetablePage() {
     ])
 
     if (error) {
-      // محاولة بديلة احتياطية لو كان اسم الحقل في القاعدة room_or_place
+      // محاولة بديلة لو اسم الحقل room_or_place
       const { error: err2 } = await supabase.from('timetable').insert([
         {
           teacher_id: teacherId,
@@ -70,7 +70,8 @@ export default function TimetablePage() {
       ])
       
       if (err2) {
-        toast('تعذر إضافة الحصة للجدول', 'error')
+        console.error('Supabase Timetable Error:', err2)
+        toast(`خطأ قاعدة البيانات: ${err2.message}`, 'error')
       } else {
         toast('تمت إضافة الموعد بنجاح')
         setStartTime('')
